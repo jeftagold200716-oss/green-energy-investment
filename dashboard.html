@@ -59,13 +59,15 @@
                 <p class="text-emerald-100 text-xs font-semibold uppercase tracking-widest opacity-80">Current Assets</p>
                 <h2 id="balance" class="text-4xl font-black mt-1">₦0.00</h2>
                 <div class="flex gap-4 mt-6">
-                    <button onclick="toggleModal('depositModal', true)" class="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 rounded-2xl font-bold text-sm transition-all">Deposit</button>
-                    <button onclick="toggleModal('withdrawModal', true)" class="flex-1 bg-emerald-800/40 hover:bg-emerald-800/60 backdrop-blur-md py-3 rounded-2xl font-bold text-sm transition-all border border-white/10">Withdraw</button>
-                </div>
-            </div>
-            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full"></div>
-        </div>
+                    <!-- Replace your current Deposit button with this -->
+<a href="deposit.html" class="flex flex-col items-center group">
+    <div class="w-12 h-12 bg-white shadow-sm rounded-2xl flex items-center justify-center mb-1 group-active:scale-95 transition-all">
+        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
     </div>
+    <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Deposit</span>
+</a>
 
     <!-- Partnership Badge -->
     <div class="max-w-lg mx-auto px-4 mt-2">
