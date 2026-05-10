@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit Funds</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 p-6">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-[2rem] shadow-sm">
+        <h2 class="text-xl font-black mb-6">Deposit Money</h2>
+        
+        <div class="bg-emerald-50 p-4 rounded-2xl mb-6 border border-emerald-100">
+            <p class="text-[10px] font-bold text-emerald-800 uppercase">Bank Transfer Details</p>
+            <p class="text-sm font-bold mt-1">Bank: OPAY</p>
+            <p class="text-sm font-bold">Account: 8148868032</p>
+            <p class="text-sm">Name: ADEYA JEPHTHAH</p>
+        </div>
+
+        <div class="space-y-4">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase">Amount to Deposit (₦)</label>
+            <input type="number" id="deposit_amount" placeholder="Min 1000" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500">
+            
+            <button onclick="requestDeposit()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl">SUBMIT & SEND PROOF</button>
+            <a href="dashboard.html" class="block text-center text-slate-400 text-xs font-bold mt-4">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+
+        async function requestDeposit() {
+            const amount = document.getElementById('deposit_amount').value;
+            if (amount < 1000) return alert("Minimum deposit is ₦3,500");
+
+            const { data: { user } } = await _supabase.auth.getUser();
+            const phone = user.email.replace('@phone.com', '');
+
+            const { error } = await _supabase.from('deposits').insert([
+                { user_id: user.id, amount: amount, phone_number: phone, status: 'pending' }
+            ]);
+
+            if (error) return alert(error.message);
+
+            alert("Request sent! Redirecting to Admin WhatsApp...");
+            // REPLACE '2348000000000' with your actual WhatsApp number
+            window.location.href = `https://wa.me/237698771429?text=I just deposited ₦${amount} for ${phone}. Please verify.`;
+        }
+    </script>
+</body>
+</html>
