@@ -1,5 +1,4 @@
 // 1. Supabase Configuration
-// Removed '/rest/v1/' from the URL - the library adds that itself!
 const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY';
 
@@ -46,25 +45,36 @@ async function fetchProducts() {
     container.innerHTML = ''; // Clear loading spinner
 
     products.forEach(p => {
+        // --- BIGGER CARDS & DURATION LOGIC ---
         const productHtml = `
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 relative overflow-hidden mb-4">
-                <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[9px] font-black px-4 py-1 rounded-bl-2xl">LIVE</div>
-                <h3 class="font-black text-slate-800 text-lg mb-1 uppercase tracking-tighter">${p.name}</h3>
-                <p class="text-slate-400 text-[10px] font-bold uppercase mb-4">ROI: 24-Hour Cycle</p>
+            <div class="bg-white p-8 rounded-[3rem] shadow-md border border-slate-100 relative overflow-hidden mb-8 transition-transform active:scale-95">
+                <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black px-5 py-2 rounded-bl-2xl uppercase tracking-widest">
+                    Active Plan
+                </div>
                 
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-slate-50 p-3 rounded-2xl">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase block">Daily Income</span>
-                        <span class="text-emerald-600 font-black text-sm">₦${Number(p.daily_return).toLocaleString()}</span>
+                <div class="mb-6">
+                    <h3 class="font-black text-slate-800 text-2xl mb-1 uppercase tracking-tighter">${p.name}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <p class="text-slate-400 text-[11px] font-bold uppercase tracking-widest">
+                            Contract: ${p.duration_days || p.validity_days || '90'} Days
+                        </p>
                     </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase block">Price</span>
-                        <span class="text-slate-800 font-black text-sm">₦${Number(p.price).toLocaleString()}</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Daily Income</span>
+                        <span class="text-emerald-600 font-black text-xl">₦${Number(p.daily_return).toLocaleString()}</span>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Price</span>
+                        <span class="text-slate-800 font-black text-xl">₦${Number(p.price).toLocaleString()}</span>
                     </div>
                 </div>
 
-                <button onclick="buyProduct('${p.id}', ${p.price})" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl active:scale-95 transition-all shadow-lg shadow-slate-200">
-                    START INVESTING
+                <button onclick="buyProduct('${p.id}', ${p.price})" class="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] text-lg shadow-xl shadow-slate-200 hover:bg-emerald-700 transition-colors uppercase tracking-tight">
+                    Start Investing Now
                 </button>
             </div>
         `;
@@ -72,11 +82,10 @@ async function fetchProducts() {
     });
 }
 
-// 4. UI Helpers
+// 4. UI Helpers (Balance Display)
 async function updateUI(userId) {
     if (!userId) return;
     
-    // Attempt to get balance from profiles table
     const { data: profile, error } = await _supabase
         .from('profiles')
         .select('wallet_balance')
