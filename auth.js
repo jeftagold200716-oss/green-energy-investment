@@ -1,8 +1,7 @@
-const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co'; // Removed /rest/v1/
+const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Start on Registration mode by default
 let isLoginMode = false;
 
 function toggleAuthMode() {
@@ -10,56 +9,43 @@ function toggleAuthMode() {
     document.getElementById('auth-title').innerText = isLoginMode ? 'Login' : 'Create Account';
     document.getElementById('primary-btn').innerText = isLoginMode ? 'LOGIN' : 'CREATE ACCOUNT';
     document.getElementById('toggle-btn').innerText = isLoginMode ? "Don't have an account? Register" : "Already have an account? Login";
-    
-    // Smoothly show/hide registration fields
-    const regFields = document.getElementById('reg-fields');
-    regFields.style.display = isLoginMode ? 'none' : 'block';
+    document.getElementById('reg-fields').style.display = isLoginMode ? 'none' : 'block';
 }
 
 async function handleAuth() {
     const phone = document.getElementById('auth_phone').value.trim();
     const password = document.getElementById('auth_pass').value;
 
-    if (phone.length < 10) return alert("Please enter a valid phone number");
-    if (password.length < 6) return alert("Password must be at least 6 characters");
+    if (phone.length < 10) return alert("Enter valid phone number");
+    if (password.length < 6) return alert("Password too short (min 6)");
 
     if (isLoginMode) {
-        // --- LOGIN LOGIC ---
-        const { data, error } = await _supabase.auth.signInWithPassword({
+        const { error } = await _supabase.auth.signInWithPassword({
             email: `${phone}@phone.com`,
             password: password,
         });
-
-        if (error) return alert("Login Error: " + error.message);
-        
-        // Successful login
+        if (error) return alert(error.message);
         window.location.href = "index.html";
     } else {
-        // --- REGISTER LOGIC ---
         const confirm = document.getElementById('auth_confirm').value;
         const tnc = document.getElementById('auth_tnc').checked;
 
-        if (password !== confirm) return alert("Passwords do not match!");
-        if (!tnc) return alert("Please accept the Terms & Conditions");
+        if (password !== confirm) return alert("Passwords do not match");
+        if (!tnc) return alert("Accept the T&C to continue");
 
-        const { data, error } = await _supabase.auth.signUp({
+        const { error } = await _supabase.auth.signUp({
             email: `${phone}@phone.com`,
             password: password,
         });
 
-        if (error) return alert("Registration Error: " + error.message);
-        
-        alert("Account created successfully! Switching to Login.");
+        if (error) return alert(error.message);
+        alert("Registration successful! Now login.");
         toggleAuthMode();
     }
 }
 
-// Initial state setup to ensure Registration shows first on page load
-function init() {
+// Force the page to start on "Registration"
+window.onload = () => {
     isLoginMode = false;
     document.getElementById('reg-fields').style.display = 'block';
-    document.getElementById('auth-title').innerText = 'Create Account';
-    document.getElementById('primary-btn').innerText = 'CREATE ACCOUNT';
-}
-
-init();
+};
