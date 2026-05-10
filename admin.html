@@ -3,76 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Energy | Admin Panel</title>
+    <title>Master Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-10">
+<body class="bg-slate-50 font-sans p-4">
 
-    <div class="max-w-5xl mx-auto">
-        <header class="flex justify-between items-center mb-10 border-b border-slate-800 pb-5">
-            <h1 class="text-2xl font-black text-emerald-500 tracking-tighter">MASTER ADMIN</h1>
-            <button onclick="location.reload()" class="bg-slate-800 px-4 py-2 rounded-lg text-sm">Refresh Data</button>
-        </header>
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-black text-slate-800 mb-8">Admin Dashboard</h1>
 
-        <!-- Section 1: Publish Products -->
-        <section class="bg-slate-800 rounded-3xl p-6 mb-10 border border-emerald-500/20 shadow-xl">
-            <h2 class="text-xl font-bold mb-4 text-emerald-400">Publish New Solar Tier</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" id="p_name" placeholder="Tier Name (e.g. Solar Pro)" class="bg-slate-700 p-4 rounded-2xl outline-none border border-slate-600 focus:border-emerald-500">
-                <input type="number" id="p_price" placeholder="Price (₦)" class="bg-slate-700 p-4 rounded-2xl outline-none border border-slate-600 focus:border-emerald-500">
-                <input type="number" id="p_return" placeholder="Daily Return (₦)" class="bg-slate-700 p-4 rounded-2xl outline-none border border-slate-600 focus:border-emerald-500">
+        <!-- PRODUCT PUBLISHING SECTION -->
+        <section class="bg-white p-6 rounded-3xl shadow-sm mb-8">
+            <h2 class="text-lg font-bold mb-4">Publish New Product</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="p_name" placeholder="Product Name" class="p-3 bg-slate-50 rounded-xl border">
+                <input type="number" id="p_price" placeholder="Price (₦)" class="p-3 bg-slate-50 rounded-xl border">
+                <input type="number" id="p_return" placeholder="Daily Return (₦)" class="p-3 bg-slate-50 rounded-xl border">
+                <input type="number" id="p_days" placeholder="Duration (Days)" class="p-3 bg-slate-50 rounded-xl border">
             </div>
-            <button onclick="publishProduct()" class="mt-4 w-full md:w-auto bg-emerald-600 px-10 py-4 rounded-2xl font-black hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-900/20">PUBLISH TO SITE</button>
+            <button onclick="publishProduct()" class="w-full mt-4 bg-slate-900 text-white py-4 rounded-xl font-bold">PUBLISH TO USERS</button>
         </section>
 
-        <!-- Section 2: Pending Deposits -->
-        <section class="mb-10">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                Pending Deposit Requests
-            </h2>
-            <div class="overflow-x-auto bg-slate-800 rounded-3xl border border-slate-700">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
-                        <tr>
-                            <th class="p-5">Sender Name</th>
-                            <th class="p-5">Amount</th>
-                            <th class="p-5">Date</th>
-                            <th class="p-5 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="deposit-list">
-                        <!-- Loaded by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        <!-- DEPOSITS SECTION -->
+        <div class="mb-8">
+            <h2 class="text-lg font-bold mb-4 text-emerald-600">Pending Deposits</h2>
+            <div id="deposit-list" class="space-y-3"></div>
+        </div>
 
-        <!-- Section 3: Withdrawal Requests -->
-        <section>
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">
-                <span class="w-2 h-2 bg-red-500 rounded-full"></span>
-                Withdrawal Requests (20% Fee Applied)
-            </h2>
-            <div class="overflow-x-auto bg-slate-800 rounded-3xl border border-slate-700">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
-                        <tr>
-                            <th class="p-5">Bank Details</th>
-                            <th class="p-5">Gross Amount</th>
-                            <th class="p-5 text-emerald-400">Net Payable</th>
-                            <th class="p-5 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="withdraw-list">
-                        <!-- Loaded by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        <!-- WITHDRAWALS SECTION -->
+        <div>
+            <h2 class="text-lg font-bold mb-4 text-blue-600">Pending Withdrawals</h2>
+            <div id="withdraw-list" class="space-y-3"></div>
+        </div>
     </div>
 
-    <script src="admin.js"></script>
+    <script>
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+
+        // --- PRODUCT LOGIC ---
+        async function publishProduct() {
+            const name = document.getElementById('p_name').value;
+            const price = document.getElementById('p_price').value;
+            const daily = document.getElementById('p_return').value;
+            const days = document.getElementById('p_days').value;
+
+            const { error } = await _supabase.from('products').insert([{ name, price, daily_return: daily, duration_days: days }]);
+            if (error) alert(error.message);
+            else alert("Product Live!");
+        }
+
+        // --- LOAD DATA ---
+        async function loadAdminData() {
+            // Fetch Pending Deposits
+            const { data: deps } = await _supabase.from('deposits').select('*').eq('status', 'pending');
+            let depHtml = '';
+            deps?.forEach(d => {
+                depHtml += `<div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border-l-4 border-emerald-500">
+                    <div>
+                        <p class="font-bold">${d.phone_number}</p>
+                        <p class="text-xs text-slate-400">${new Date(d.created_at).toLocaleString()}</p>
+                        <p class="text-emerald-600 font-black">₦${d.amount}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approveDep('${d.id}', '${d.user_id}', ${d.amount})" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold">Approve</button>
+                        <button onclick="updateStatus('deposits', '${d.id}', 'rejected')" class="bg-slate-100 text-slate-400 px-4 py-2 rounded-lg text-xs font-bold">Reject</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('deposit-list').innerHTML = depHtml || '<p class="text-slate-400">No deposits</p>';
+
+            // Fetch Pending Withdrawals
+            const { data: wits } = await _supabase.from('withdrawals').select('*').eq('status', 'pending');
+            let witHtml = '';
+            wits?.forEach(w => {
+                witHtml += `<div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="font-bold">₦${w.amount}</p>
+                            <p class="text-xs text-slate-400">${new Date(w.created_at).toLocaleString()}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="approveWit('${w.id}', '${w.user_id}', ${w.amount})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Confirm Paid</button>
+                            <button onclick="updateStatus('withdrawals', '${w.id}', 'rejected')" class="bg-slate-100 text-slate-400 px-4 py-2 rounded-lg text-xs font-bold">Reject</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl text-[11px] text-slate-600">
+                        <p>Bank: ${w.bank_name}</p>
+                        <p>Acc: ${w.account_number}</p>
+                        <p>Name: ${w.account_name}</p>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('withdraw-list').innerHTML = witHtml || '<p class="text-slate-400">No withdrawals</p>';
+        }
+
+        async function approveDep(id, uid, amt) {
+            await _supabase.rpc('approve_deposit', { target_deposit_id: id, target_user_id: uid, deposit_amount: amt });
+            loadAdminData();
+        }
+
+        async function approveWit(id, uid, amt) {
+            await _supabase.rpc('approve_withdrawal', { target_id: id, target_user_id: uid, withdraw_amount: amt });
+            loadAdminData();
+        }
+
+        async function updateStatus(table, id, status) {
+            await _supabase.from(table).update({ status }).eq('id', id);
+            loadAdminData();
+        }
+
+        loadAdminData();
+    </script>
 </body>
 </html>
