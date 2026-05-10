@@ -1,0 +1,16 @@
+body {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.solar-card-gradient {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+/* Smooth transitions for a professional feel */
+* {
+    transition: all 0.2s ease-in-out;
+}

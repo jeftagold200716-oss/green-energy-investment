@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Energy | Secure Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .auth-card { border-radius: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen p-6">
+
+    <div class="w-full max-w-md bg-white auth-card p-10 border border-slate-100">
+        <div class="text-center mb-10">
+            <div class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Welcome Back</h1>
+            <p class="text-slate-400 text-sm mt-1">Invest in the future of energy</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Email Address</label>
+                <input type="email" id="auth_email" placeholder="name@example.com" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500 transition-all">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Password</label>
+                <input type="password" id="auth_pass" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500 transition-all">
+            </div>
+
+            <div class="flex flex-col gap-3 pt-4">
+                <button onclick="handleLogin()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all">LOGIN</button>
+                <button onclick="handleSignUp()" class="w-full bg-white text-emerald-600 border border-emerald-100 font-bold py-4 rounded-2xl hover:bg-emerald-50 transition-all">Create New Account</button>
+            </div>
+        </div>
+
+        <p class="text-center text-[10px] text-slate-300 mt-10">Protected by Green Energy Secure Protocol</p>
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+</html>
