@@ -162,3 +162,78 @@ async function updateUI() {
 
 // Start
 initApp();
+// --- J-TECH PRODUCT ENGINE ---
+
+// 1. Fetch and Show Products
+async function displayProducts() {
+    const { data: products, error } = await _supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) return console.error("Error loading products:", error);
+
+    const container = document.getElementById('product-container');
+    if (!container) return; 
+
+    container.innerHTML = ''; // Clear the loading state
+
+    products.forEach(p => {
+        container.innerHTML += `
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[9px] font-black px-4 py-1 rounded-bl-2xl">
+                    LIVE
+                </div>
+                <h3 class="font-black text-slate-800 text-lg mb-1">${p.name}</h3>
+                <p class="text-slate-400 text-[10px] font-bold uppercase mb-4">${p.duration_days} Days Plan</p>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-50 p-3 rounded-2xl">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase block">Daily Income</span>
+                        <span class="text-emerald-600 font-black text-sm">₦${p.daily_return}</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase block">Price</span>
+                        <span class="text-slate-800 font-black text-sm">₦${p.price}</span>
+                    </div>
+                </div>
+
+                <button onclick="buyProduct('${p.id}', ${p.price})" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl active:scale-95 transition-all shadow-lg shadow-slate-200">
+                    START INVESTING
+                </button>
+            </div>
+        `;
+    });
+}
+
+// 2. Buy Product Function
+async function buyProduct(productId, price) {
+    const { data: { user } } = await _supabase.auth.getUser();
+    
+    // Check real-time balance
+    const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
+
+    if (profile.wallet_balance < price) {
+        return alert("⚠️ Insufficient Balance! Please deposit more funds.");
+    }
+
+    // Process Purchase
+    const { error } = await _supabase.from('user_investments').insert([
+        { user_id: user.id, product_id: productId, amount: price }
+    ]);
+
+    if (error) {
+        alert("Transaction Failed. Check your network.");
+    } else {
+        alert("🎉 Investment Successful! Your daily profit is now active.");
+        location.reload(); 
+    }
+}
+
+// 3. Navigation helper
+function scrollToProducts() {
+    document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Run the engine when dashboard loads
+displayProducts();
