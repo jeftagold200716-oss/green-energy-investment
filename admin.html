@@ -122,13 +122,40 @@
             if(viewId === 'users') loadUserStats();
             if(viewId === 'revenue') loadRevenue();
         }
+async function publishProduct() {
+    const name = document.getElementById('p_name').value;
+    const price = document.getElementById('p_price').value;
+    const daily = document.getElementById('p_daily').value;
+    const validity = document.getElementById('p_duration').value; // Check if this ID is 'p_duration' or 'p_validity'
+    const btn = event.currentTarget;
 
-        // --- 1. PUBLISH LOGIC ---
-        async function publishProduct() {
-            // (Previous code logic for inserting into 'products' table)
-        }
+    if(!name || !price || !daily || !validity) {
+        return alert("Admin, please fill all fields!");
+    }
 
-        // --- 2. DEPOSIT LOGIC (Approve credits user instantly) ---
+    btn.innerText = "UPLOADING...";
+    btn.disabled = true;
+
+    const { error } = await _supabase
+        .from('products')
+        .insert([{ 
+            name: name, 
+            price: Number(price), 
+            daily_return: Number(daily), 
+            validity_days: Number(validity),
+            status: 'active' 
+        }]);
+
+    if (error) {
+        console.error(error);
+        alert("Error: " + error.message);
+        btn.innerText = "PUSH TO WEBSITE";
+        btn.disabled = false;
+    } else {
+        alert("Product is now LIVE! 🚀");
+        location.reload(); 
+    }
+}
         async function loadDeposits() {
             const { data } = await _supabase.from('deposits').select('*').eq('status', 'pending');
             const list = document.getElementById('deposit-list');
