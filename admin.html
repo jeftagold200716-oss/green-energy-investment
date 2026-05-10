@@ -31,7 +31,7 @@
                     <input type="number" id="p_price" placeholder="Price (₦)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                     <input type="number" id="p_daily" placeholder="Daily Return (₦)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                     <input type="number" id="p_duration" placeholder="Duration (Days)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
-                    <button onclick="publishProduct()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg">PUSH TO WEBSITE</button>
+                    <button onclick="publishProduct()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition-transform">PUSH TO WEBSITE</button>
                 </div>
             </div>
         </section>
@@ -61,24 +61,23 @@
                     <p id="u-total" class="font-black text-emerald-600 text-lg">0</p>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm h-64">
-                <canvas id="userChart"></canvas>
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm">
+                <canvas id="userChart" style="max-height: 250px;"></canvas>
             </div>
         </section>
 
         <section id="view-revenue" class="admin-view space-y-4">
             <div class="bg-slate-900 p-6 rounded-[2rem] text-white shadow-xl">
-                <p class="text-[10px] font-bold uppercase text-slate-400">Total Deposits (Inflow)</p>
+                <p class="text-[10px] font-bold uppercase text-slate-400">Total Deposits</p>
                 <h3 id="rev-in" class="text-3xl font-black">₦0.00</h3>
                 <hr class="my-4 border-slate-700">
-                <p class="text-[10px] font-bold uppercase text-slate-400">Total Payouts (Outflow)</p>
+                <p class="text-[10px] font-bold uppercase text-slate-400">Total Payouts</p>
                 <h3 id="rev-out" class="text-3xl font-black text-red-400">₦0.00</h3>
             </div>
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm h-64">
-                <canvas id="revenueChart"></canvas>
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm">
+                <canvas id="revenueChart" style="max-height: 250px;"></canvas>
             </div>
         </section>
-
     </div>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center p-3 z-[999] shadow-2xl overflow-x-auto no-scrollbar">
@@ -105,16 +104,19 @@
     </nav>
 
     <script>
-        const _supabase = supabase.createClient('URL', 'KEY');
+        // INITIALIZE SUPABASE
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-        // TAB SWITCHER LOGIC
+        // TAB SWITCHER
         function switchView(viewId, title) {
             document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
             document.getElementById('view-title').innerText = title;
             
-            // Highlight icon
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-emerald-600', 'text-slate-400'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-600');
+                btn.classList.add('text-slate-400');
+            });
             event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
 
             if(viewId === 'deposits') loadDeposits();
@@ -122,60 +124,49 @@
             if(viewId === 'users') loadUserStats();
             if(viewId === 'revenue') loadRevenue();
         }
-async function publishProduct() {
-    // Get values
-    const name = document.getElementById('p_name').value;
-    const price = document.getElementById('p_price').value;
-    const daily = document.getElementById('p_daily').value;
-    const validity = document.getElementById('p_duration').value; 
-    const btn = event.currentTarget;
 
-    // 1. Basic Validation
-    if(!name || !price || !daily || !validity) {
-        return alert("Please fill all fields before publishing.");
-    }
+        // 1. PUBLISH PRODUCT
+        async function publishProduct() {
+            const name = document.getElementById('p_name').value;
+            const price = document.getElementById('p_price').value;
+            const daily = document.getElementById('p_daily').value;
+            const validity = document.getElementById('p_duration').value; 
+            const btn = event.currentTarget;
 
-    // 2. Set Loading State
-    btn.innerText = "UPLOADING...";
-    btn.disabled = true;
-    btn.style.opacity = "0.7";
+            if(!name || !price || !daily || !validity) return alert("Fill all fields!");
 
-    try {
-        // 3. Attempt Database Insert
-        const { data, error } = await _supabase
-            .from('products')
-            .insert([{ 
-                name: name, 
-                price: Number(price), 
-                daily_return: Number(daily), 
-                validity_days: Number(validity),
-                status: 'active' 
-            }])
-            .select(); // Request data back to confirm it worked
+            btn.innerText = "UPLOADING...";
+            btn.disabled = true;
 
-        if (error) throw error;
+            try {
+                const { error } = await _supabase
+                    .from('products')
+                    .insert([{ 
+                        name: name, 
+                        price: Number(price), 
+                        daily_return: Number(daily), 
+                        validity_days: Number(validity),
+                        status: 'active' 
+                    }]);
 
-        // 4. Success Case
-        alert("Success! " + name + " is now live.");
-        location.reload(); // Refresh to clear form
+                if (error) throw error;
+                alert("Success! " + name + " is now live.");
+                location.reload();
+            } catch (err) {
+                alert("Error: " + err.message);
+                btn.innerText = "PUSH TO WEBSITE";
+                btn.disabled = false;
+            }
+        }
 
-    } catch (err) {
-        // 5. Error Case (Button resets so you aren't stuck)
-        console.error("Full Error Object:", err);
-        alert("Publishing Failed: " + (err.message || "Unknown Error"));
-        
-        btn.innerText = "PUSH TO WEBSITE";
-        btn.disabled = false;
-        btn.style.opacity = "1";
-    }
-}
+        // 2. DEPOSITS
         async function loadDeposits() {
-            const { data } = await _supabase.from('deposits').select('*').eq('status', 'pending');
+            const { data } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
             const list = document.getElementById('deposit-list');
             list.innerHTML = data.map(d => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
                     <p class="text-[10px] font-black text-slate-400 uppercase">${new Date(d.created_at).toLocaleString()}</p>
-                    <h4 class="font-black text-slate-800">₦${d.amount} - User ID: ${d.user_id.slice(0,8)}</h4>
+                    <h4 class="font-black text-slate-800">₦${d.amount} - <span class="text-emerald-600">${d.user_phone || d.user_id.slice(0,8)}</span></h4>
                     <div class="flex gap-2 mt-4">
                         <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs">APPROVE</button>
                         <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold text-xs">REJECT</button>
@@ -186,40 +177,62 @@ async function publishProduct() {
 
         async function handleDeposit(id, uid, amt, status) {
             if (status === 'approved') {
-                // RPC or separate updates to increment user wallet_balance and total_deposit
                 await _supabase.rpc('increment_balance', { user_id: uid, amount: amt });
             }
             await _supabase.from('deposits').update({ status: status }).eq('id', id);
             loadDeposits();
         }
 
-        // --- 3. WITHDRAWAL LOGIC (Reject credits back to user) ---
+        // 3. WITHDRAWALS
         async function loadWithdraws() {
-            const { data } = await _supabase.from('withdrawals').select('*').eq('status', 'pending');
+            const { data } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
             const list = document.getElementById('withdraw-list');
             list.innerHTML = data.map(w => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm">
-                    <p class="text-xs font-black text-emerald-600 uppercase tracking-tighter">₦${w.amount}</p>
-                    <p class="text-[10px] font-bold text-slate-500 mt-1">${w.bank_name} | ${w.account_number}</p>
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
+                    <p class="text-xs font-black text-emerald-600">₦${w.amount}</p>
+                    <p class="text-[10px] font-bold text-slate-500 mt-1">${w.bank_name} | ${w.account_number} | ${w.account_name}</p>
                     <div class="flex gap-2 mt-4">
-                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold text-xs">MARK SUCCESS</button>
-                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-red-50 text-red-500 py-3 rounded-xl font-bold text-xs">REJECT & REFUND</button>
+                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold text-xs">SUCCESS</button>
+                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-red-50 text-red-500 py-3 rounded-xl font-bold text-xs">REJECT</button>
                     </div>
                 </div>
-            `).join('') || '<p class="text-center py-10 text-slate-400 font-bold">Clear!</p>';
+            `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending withdrawals</p>';
         }
 
         async function handleWithdraw(id, uid, amt, status) {
             if (status === 'rejected') {
-                // Refund the user's wallet
                 await _supabase.rpc('increment_balance', { user_id: uid, amount: amt });
             }
             await _supabase.from('withdrawals').update({ status: status }).eq('id', id);
             loadWithdraws();
         }
 
-        // --- 4 & 5. STATS & CHARTS ---
-        // (Include Chart.js initialization here for growth and revenue)
+        // 4 & 5. STATS
+        async function loadUserStats() {
+            const { data: users } = await _supabase.from('profiles').select('created_at');
+            document.getElementById('u-total').innerText = users.length;
+            // Simplified Charting
+            new Chart(document.getElementById('userChart'), {
+                type: 'line',
+                data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Growth', data: [12, 19, 3, 5, 2, 3, 9], borderColor: '#10b981' }] }
+            });
+        }
+
+        async function loadRevenue() {
+            const { data: dep } = await _supabase.from('deposits').select('amount').eq('status', 'approved');
+            const { data: wit } = await _supabase.from('withdrawals').select('amount').eq('status', 'success');
+            
+            const totalIn = dep.reduce((acc, curr) => acc + curr.amount, 0);
+            const totalOut = wit.reduce((acc, curr) => acc + curr.amount, 0);
+
+            document.getElementById('rev-in').innerText = '₦' + totalIn.toLocaleString();
+            document.getElementById('rev-out').innerText = '₦' + totalOut.toLocaleString();
+        }
+
+        // Run On Load
+        window.onload = () => {
+            loadRevenue();
+        };
     </script>
 </body>
 </html>
