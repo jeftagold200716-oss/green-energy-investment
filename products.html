@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Plans | Green Energy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 pb-32">
+    <div class="max-w-lg mx-auto p-6">
+        <header class="mb-8">
+            <h1 class="text-3xl font-black text-slate-800">Solar Plans</h1>
+            <p class="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1">Select a tier to start earning</p>
+        </header>
+
+        <div id="product-container" class="grid grid-cols-1 gap-6">
+            <div class="animate-pulse flex flex-col items-center py-20">
+                <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="mt-4 text-slate-400 text-[10px] font-black uppercase">Loading Market...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Use the same logic as dashboard to load products
+        window.addEventListener('load', () => {
+             // If your app.js already has a fetchProducts() function, it will run here automatically
+        });
+    </script>
+</body>
+</html>
