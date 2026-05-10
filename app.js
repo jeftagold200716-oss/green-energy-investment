@@ -1,200 +1,65 @@
 // 1. Supabase Configuration
-const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co/rest/v1/';
+// Removed '/rest/v1/' from the URL - the library adds that itself!
+const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY';
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// State Management
-let currentUser = null;
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Initialize App
 async function initApp() {
-    // For this build, we assume the user session is handled or fixed for testing
-    // In a real app, use _supabase.auth.getUser()
+    const { data: { session } } = await _supabase.auth.getSession();
+    
+    if (!session) {
+        console.log("No active session, products will load as public.");
+    } else {
+        updateUI(session.user.id);
+    }
+    
     fetchProducts();
-    updateUI();
 }
 
 // 3. Fetch Products from Admin Table
 async function fetchProducts() {
+    console.log("Syncing with market...");
+    
     const { data: products, error } = await _supabase
         .from('products')
         .select('*')
         .order('price', { ascending: true });
 
-    if (error) return console.error("Error loading products:", error);
+    if (error) {
+        console.error("Supabase Error:", error.message);
+        return;
+    }
 
     const container = document.getElementById('product-container');
-    container.innerHTML = ''; 
+    if (!container) return;
 
-    products.forEach(product => {
-        const productHtml = `
-            <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all">
-                <div class="flex justify-between items-start">
-                    <div class="flex gap-3">
-                        <div class="bg-emerald-50 p-3 rounded-2xl">
-                            <img src="${product.image_url || 'https://img.icons8.com/fluency/48/solar-panel.png'}" class="w-8 h-8"/>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">${product.name}</h4>
-                            <p class="text-xs text-slate-400 font-medium">ROI: 24-Hour Cycle</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-slate-50 flex justify-between items-end">
-                    <div>
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Investment</p>
-                        <p class="text-lg font-black text-emerald-600">₦${Number(product.price).toLocaleString()}</p>
-                    </div>
-                    <div class="text-center px-4">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Daily Return</p>
-                        <p class="text-md font-bold text-slate-700">₦${Number(product.daily_return).toLocaleString()}</p>
-                    </div>
-                    <button onclick="buyProduct('${product.id}', ${product.price})" class="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-emerald-600">Invest</button>
-                </div>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', productHtml);
-    });
-}
-
-// 4. Deposit Logic (WhatsApp & DB)
-async function initiateDeposit() {
-    const name = document.getElementById('dep_name').value;
-    const amount = document.getElementById('dep_amount').value;
-    const proofFile = document.getElementById('dep_proof').files[0];
-
-    if (!name || !amount || !proofFile) {
-        return alert("Please fill all fields and upload a screenshot.");
+    if (!products || products.length === 0) {
+        container.innerHTML = `
+            <div class="p-12 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-tighter">No investment plans active yet.</p>
+            </div>`;
+        return;
     }
 
-    // WhatsApp Message
-    const adminWhatsApp = "237698771429"; // REPLACE WITH YOUR NUMBER
-    const message = `*NEW DEPOSIT REQUEST*%0A` +
-                    `Name: ${name}%0A` +
-                    `Amount: ₦${amount}%0A` +
-                    `Status: Payment Made. Check Admin Panel for Screenshot.`;
-
-    // Save to Supabase 'deposits' table
-    const { error } = await _supabase.from('deposits').insert([
-        { sender_name: name, amount: amount, status: 'pending' }
-    ]);
-
-    if (!error) {
-        alert("Request logged. Redirecting to WhatsApp for final proof...");
-        window.open(`https://wa.me/${adminWhatsApp}?text=${message}`, '_blank');
-        toggleModal('depositModal', false);
-    }
-}
-
-// 5. Withdrawal Logic (The 5k Rules)
-async function initiateWithdraw() {
-    const amount = parseFloat(document.getElementById('wd_amount').value);
-    const bank = document.getElementById('wd_bank').value;
-    const account = document.getElementById('wd_account').value;
-
-    // Fetch user profile for validation
-    const { data: profile } = await _supabase.from('profiles').select('*').single();
-
-    if (amount < 5000) return alert("Minimum withdrawal is ₦5,000");
-    if (profile.total_deposited < 5000) return alert("Total deposit must be ₦5,000+ to withdraw.");
-    if (amount > profile.wallet_balance) return alert("Insufficient balance.");
-
-    const fee = amount * 0.20; // 20% Fee
-    const payable = amount - fee;
-
-    // 1. Debit account immediately (as requested)
-    const { error: updateErr } = await _supabase
-        .from('profiles')
-        .update({ wallet_balance: profile.wallet_balance - amount })
-        .eq('id', profile.id);
-
-    if (!updateErr) {
-        // 2. Log request for Admin
-        await _supabase.from('withdrawals').insert([{
-            user_id: profile.id,
-            amount_requested: amount,
-            amount_to_pay: payable,
-            bank_details: `${bank} - ${account}`,
-            status: 'pending'
-        }]);
-
-        alert(`Request Sent! ₦${payable} will be sent after 20% fee.`);
-        toggleModal('withdrawModal', false);
-        updateUI();
-    }
-}
-
-// 6. Investment Logic
-async function buyProduct(productId, price) {
-    const { data: profile } = await _supabase.from('profiles').select('*').single();
-
-    if (profile.wallet_balance < price) {
-        return alert("Insufficient balance to buy this tier. Please deposit first.");
-    }
-
-    // Deduct balance and add to investments
-    await _supabase.from('profiles').update({ 
-        wallet_balance: profile.wallet_balance - price 
-    }).eq('id', profile.id);
-
-    await _supabase.from('user_investments').insert([{
-        user_id: profile.id,
-        product_id: productId,
-        status: 'active'
-    }]);
-
-    alert("Investment successful! Profit starts in 24 hours.");
-    updateUI();
-}
-
-// UI Helpers
-function toggleModal(id, show) {
-    const modal = document.getElementById(id);
-    show ? modal.classList.add('active') : modal.classList.remove('active');
-}
-
-async function updateUI() {
-    const { data: profile } = await _supabase.from('profiles').select('wallet_balance').single();
-    if (profile) {
-        document.getElementById('balance').innerText = `₦${Number(profile.wallet_balance).toLocaleString()}`;
-    }
-}
-
-// Start
-initApp();
-// --- J-TECH PRODUCT ENGINE ---
-
-// 1. Fetch and Show Products
-async function displayProducts() {
-    const { data: products, error } = await _supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) return console.error("Error loading products:", error);
-
-    const container = document.getElementById('product-container');
-    if (!container) return; 
-
-    container.innerHTML = ''; // Clear the loading state
+    container.innerHTML = ''; // Clear loading spinner
 
     products.forEach(p => {
-        container.innerHTML += `
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
-                <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[9px] font-black px-4 py-1 rounded-bl-2xl">
-                    LIVE
-                </div>
-                <h3 class="font-black text-slate-800 text-lg mb-1">${p.name}</h3>
-                <p class="text-slate-400 text-[10px] font-bold uppercase mb-4">${p.duration_days} Days Plan</p>
+        const productHtml = `
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 relative overflow-hidden mb-4">
+                <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[9px] font-black px-4 py-1 rounded-bl-2xl">LIVE</div>
+                <h3 class="font-black text-slate-800 text-lg mb-1 uppercase tracking-tighter">${p.name}</h3>
+                <p class="text-slate-400 text-[10px] font-bold uppercase mb-4">ROI: 24-Hour Cycle</p>
                 
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div class="bg-slate-50 p-3 rounded-2xl">
                         <span class="text-[9px] font-bold text-slate-400 uppercase block">Daily Income</span>
-                        <span class="text-emerald-600 font-black text-sm">₦${p.daily_return}</span>
+                        <span class="text-emerald-600 font-black text-sm">₦${Number(p.daily_return).toLocaleString()}</span>
                     </div>
                     <div class="bg-slate-50 p-3 rounded-2xl">
                         <span class="text-[9px] font-bold text-slate-400 uppercase block">Price</span>
-                        <span class="text-slate-800 font-black text-sm">₦${p.price}</span>
+                        <span class="text-slate-800 font-black text-sm">₦${Number(p.price).toLocaleString()}</span>
                     </div>
                 </div>
 
@@ -203,37 +68,75 @@ async function displayProducts() {
                 </button>
             </div>
         `;
+        container.insertAdjacentHTML('beforeend', productHtml);
     });
 }
 
-// 2. Buy Product Function
+// 4. UI Helpers
+async function updateUI(userId) {
+    if (!userId) return;
+    
+    // Attempt to get balance from profiles table
+    const { data: profile, error } = await _supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('id', userId)
+        .single();
+
+    if (error) {
+        console.error("Profile Fetch Error:", error.message);
+        return;
+    }
+
+    const balanceEl = document.getElementById('balance');
+    if (balanceEl && profile) {
+        balanceEl.innerText = `₦${Number(profile.wallet_balance).toLocaleString()}`;
+    }
+}
+
+// 5. Investment Logic
 async function buyProduct(productId, price) {
     const { data: { user } } = await _supabase.auth.getUser();
     
-    // Check real-time balance
-    const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
+    if (!user) {
+        alert("Please login to invest!");
+        return;
+    }
+
+    const { data: profile } = await _supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('id', user.id)
+        .single();
 
     if (profile.wallet_balance < price) {
         return alert("⚠️ Insufficient Balance! Please deposit more funds.");
     }
 
     // Process Purchase
-    const { error } = await _supabase.from('user_investments').insert([
-        { user_id: user.id, product_id: productId, amount: price }
+    const { error: invError } = await _supabase.from('user_investments').insert([
+        { user_id: user.id, product_id: productId, amount: price, status: 'active' }
     ]);
 
-    if (error) {
-        alert("Transaction Failed. Check your network.");
+    if (invError) {
+        alert("Transaction Failed: " + invError.message);
     } else {
-        alert("🎉 Investment Successful! Your daily profit is now active.");
+        // Deduct balance
+        await _supabase.from('profiles').update({ 
+            wallet_balance: profile.wallet_balance - price 
+        }).eq('id', user.id);
+
+        alert("🎉 Investment Successful!");
         location.reload(); 
     }
 }
 
-// 3. Navigation helper
-function scrollToProducts() {
-    document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
+// Global helper for modals
+function toggleModal(id, show) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    show ? modal.classList.add('active') : modal.classList.remove('active');
 }
 
-// Run the engine when dashboard loads
-displayProducts();
+// Start the app
+document.addEventListener('DOMContentLoaded', initApp);
