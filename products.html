@@ -25,7 +25,12 @@
     <script src="app.js"></script>
     <script>
         // Use the same logic as dashboard to load products
-        window.addEventListener('load', () => {
+       <div id="product-list-container" class="mt-6 space-y-4">
+    <div class="text-center p-10">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500 mb-2"></div>
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fetching Market Plans...</p>
+    </div>
+</div>
              // If your app.js already has a fetchProducts() function, it will run here automatically
         });
     </script>
