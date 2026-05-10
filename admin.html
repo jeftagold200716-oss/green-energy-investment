@@ -123,37 +123,50 @@
             if(viewId === 'revenue') loadRevenue();
         }
 async function publishProduct() {
+    // Get values
     const name = document.getElementById('p_name').value;
     const price = document.getElementById('p_price').value;
     const daily = document.getElementById('p_daily').value;
-    const validity = document.getElementById('p_duration').value; // Check if this ID is 'p_duration' or 'p_validity'
+    const validity = document.getElementById('p_duration').value; 
     const btn = event.currentTarget;
 
+    // 1. Basic Validation
     if(!name || !price || !daily || !validity) {
-        return alert("Admin, please fill all fields!");
+        return alert("Please fill all fields before publishing.");
     }
 
+    // 2. Set Loading State
     btn.innerText = "UPLOADING...";
     btn.disabled = true;
+    btn.style.opacity = "0.7";
 
-    const { error } = await _supabase
-        .from('products')
-        .insert([{ 
-            name: name, 
-            price: Number(price), 
-            daily_return: Number(daily), 
-            validity_days: Number(validity),
-            status: 'active' 
-        }]);
+    try {
+        // 3. Attempt Database Insert
+        const { data, error } = await _supabase
+            .from('products')
+            .insert([{ 
+                name: name, 
+                price: Number(price), 
+                daily_return: Number(daily), 
+                validity_days: Number(validity),
+                status: 'active' 
+            }])
+            .select(); // Request data back to confirm it worked
 
-    if (error) {
-        console.error(error);
-        alert("Error: " + error.message);
+        if (error) throw error;
+
+        // 4. Success Case
+        alert("Success! " + name + " is now live.");
+        location.reload(); // Refresh to clear form
+
+    } catch (err) {
+        // 5. Error Case (Button resets so you aren't stuck)
+        console.error("Full Error Object:", err);
+        alert("Publishing Failed: " + (err.message || "Unknown Error"));
+        
         btn.innerText = "PUSH TO WEBSITE";
         btn.disabled = false;
-    } else {
-        alert("Product is now LIVE! 🚀");
-        location.reload(); 
+        btn.style.opacity = "1";
     }
 }
         async function loadDeposits() {
