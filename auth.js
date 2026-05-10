@@ -20,13 +20,18 @@ async function handleAuth() {
     if (password.length < 6) return alert("Password too short (min 6)");
 
     if (isLoginMode) {
+        // --- LOGIN LOGIC ---
         const { error } = await _supabase.auth.signInWithPassword({
             email: `${phone}@phone.com`,
             password: password,
         });
+        
         if (error) return alert(error.message);
-        window.location.href = "index.html";
+        
+        // SUCCESS: Redirect to the internal dashboard
+        window.location.href = "dashboard.html"; 
     } else {
+        // --- REGISTER LOGIC ---
         const confirm = document.getElementById('auth_confirm').value;
         const tnc = document.getElementById('auth_tnc').checked;
 
@@ -39,13 +44,15 @@ async function handleAuth() {
         });
 
         if (error) return alert(error.message);
-        alert("Registration successful! Now login.");
+        
+        alert("Registration successful! Now please login.");
         toggleAuthMode();
     }
 }
 
-// Force the page to start on "Registration"
+// Force the page to start on "Registration" view
 window.onload = () => {
     isLoginMode = false;
-    document.getElementById('reg-fields').style.display = 'block';
+    const regFields = document.getElementById('reg-fields');
+    if(regFields) regFields.style.display = 'block';
 };
