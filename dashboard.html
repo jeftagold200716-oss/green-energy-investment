@@ -120,24 +120,33 @@
         <p class="text-center text-slate-400 text-[9px] font-bold uppercase tracking-widest pt-4">© 2026 Green Energy Investment</p>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-50">
-        <button onclick="location.reload()" class="flex flex-col items-center gap-1 text-emerald-600">
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-            <span class="text-[9px] font-black uppercase">Home</span>
-        </button>
-        <button onclick="toggleModal('depositModal', true)" class="flex flex-col items-center gap-1 text-slate-400">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            <span class="text-[9px] font-black uppercase">Deposit</span>
-        </button>
-        <button onclick="toggleModal('withdrawModal', true)" class="flex flex-col items-center gap-1 text-slate-400">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            <span class="text-[9px] font-black uppercase">Withdraw</span>
-        </button>
-        <button onclick="scrollToProducts()" class="flex flex-col items-center gap-1 text-slate-400">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-            <span class="text-[9px] font-black uppercase">Products</span>
-        </button>
-    </nav>
+   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[100]">
+    
+    <a href="dashboard.html" class="flex flex-col items-center gap-1 text-emerald-600">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+        <span class="text-[9px] font-black uppercase tracking-tighter">Home</span>
+    </a>
+
+    <a href="deposit.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-500 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span class="text-[9px] font-black uppercase tracking-tighter">Deposit</span>
+    </a>
+
+    <a href="withdraw.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-500 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        <span class="text-[9px] font-black uppercase tracking-tighter">Withdraw</span>
+    </a>
+
+    <a href="account.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-500 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
+    </a>
+
+    <button onclick="document.getElementById('products-section').scrollIntoView({behavior: 'smooth'})" class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+        <span class="text-[9px] font-black uppercase tracking-tighter">Shop</span>
+    </button>
+</nav>
 
     <script src="app.js"></script>
 </body>
