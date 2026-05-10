@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
     const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
     async function protectPage() {
-        const { data: { user } } = await _supabase.auth.getUser();
-        if (!user) {
-            // No user? Send back to the registration/login page
+        // Wait a split second for the session to load
+        const { data: { session } } = await _supabase.auth.getSession();
+        
+        if (!session) {
+            console.log("No session found, redirecting...");
             window.location.href = "index.html";
+        } else {
+            console.log("Welcome, user:", session.user.id);
         }
     }
+    
+    // Run the check
     protectPage();
-
+</script>
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
