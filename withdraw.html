@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdraw Funds | Green Energy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .solar-gradient { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-24">
+
+    <div class="solar-gradient p-8 pb-20 rounded-b-[3rem] text-white">
+        <div class="max-w-lg mx-auto flex justify-between items-center">
+            <a href="dashboard.html" class="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </a>
+            <h1 class="font-black uppercase tracking-tighter">Withdrawal</h1>
+            <div class="w-9"></div> </div>
+        
+        <div class="max-w-lg mx-auto mt-8 text-center">
+            <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Available for Payout</p>
+            <h2 id="display_balance" class="text-4xl font-black mt-1">₦0.00</h2>
+        </div>
+    </div>
+
+    <div class="max-w-lg mx-auto px-6 -mt-10">
+        <div class="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-emerald-900/5 space-y-5">
+            
+            <div class="space-y-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Amount (₦)</label>
+                <input type="number" id="w_amount" placeholder="Min 5,000" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-emerald-500 font-bold text-slate-700">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Bank Name</label>
+                <input type="text" id="w_bank" placeholder="e.g. OPay, Kuda, Zenith" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-emerald-500">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Account Number</label>
+                <input type="number" id="w_acc_num" placeholder="10 Digits" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-emerald-500 font-bold tracking-widest">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Account Name</label>
+                <input type="text" id="w_acc_name" placeholder="Full name on account" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-emerald-500 uppercase text-xs font-bold">
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                <p class="text-[9px] text-amber-700 font-bold leading-relaxed uppercase">
+                    ⚠️ Note: Withdrawals are processed within 24 hours. Ensure your bank details are 100% correct. Processing fee is 20%.
+                </p>
+            </div>
+
+            <button onclick="submitWithdrawal()" id="btn_text" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg shadow-slate-200 active:scale-95 transition-all">
+                REQUEST PAYOUT
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+
+        let currentBalance = 0;
+
+        async function initWithdraw() {
+            const { data: { user } } = await _supabase.auth.getUser();
+            if(!user) return window.location.href = "index.html";
+
+            // Fetch real balance
+            const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
+            if(profile) {
+                currentBalance = profile.wallet_balance;
+                document.getElementById('display_balance').innerText = `₦${currentBalance.toLocaleString()}`;
+            }
+        }
+
+        async function submitWithdrawal() {
+            const amount = parseFloat(document.getElementById('w_amount').value);
+            const bank = document.getElementById('w_bank').value;
+            const num = document.getElementById('w_acc_num').value;
+            const name = document.getElementById('w_acc_name').value;
+            const btn = document.getElementById('btn_text');
+
+            if (amount < 5000) return alert("Minimum withdrawal is ₦5,000");
+            if (amount > currentBalance) return alert("Insufficient Balance!");
+            if (!bank || !num || !name) return alert("Please fill all bank details");
+
+            btn.innerText = "PROCESSING...";
+            btn.disabled = true;
+
+            const { data: { user } } = await _supabase.auth.getUser();
+
+            const { error } = await _supabase.from('withdrawals').insert([{
+                user_id: user.id,
+                amount: amount,
+                bank_name: bank,
+                account_number: num,
+                account_name: name,
+                status: 'pending'
+            }]);
+
+            if (error) {
+                alert("Error: " + error.message);
+                btn.innerText = "REQUEST PAYOUT";
+                btn.disabled = false;
+            } else {
+                alert("Withdrawal Request Submitted Successfully!");
+                window.location.href = "account.html"; // Send them to history
+            }
+        }
+
+        initWithdraw();
+    </script>
+</body>
+</html>
