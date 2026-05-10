@@ -3,53 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Energy | Secure Access</title>
+    <title>Green Energy | Access</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        .auth-card { border-radius: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    </style>
 </head>
 <body class="bg-slate-50 flex items-center justify-center min-h-screen p-6">
-
-    <div class="w-full max-w-md bg-white auth-card p-10 border border-slate-100">
+    <div class="w-full max-w-md bg-white rounded-[2rem] p-10 shadow-xl shadow-slate-200 border border-slate-100">
         <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            </div>
-            <h1 id="auth-title" class="text-2xl font-black text-slate-800 tracking-tight">Create Account</h1>
+            <h1 id="auth-title" class="text-2xl font-black text-slate-800">Create Account</h1>
         </div>
 
         <div class="space-y-4">
             <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Phone Number</label>
-                <input type="number" id="auth_phone" placeholder="080XXXXXXXX" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500 transition-all">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Phone Number</label>
+                <input type="number" id="auth_phone" placeholder="080XXXXXXXX" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500">
             </div>
             <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Password (Min 6 chars)</label>
-                <input type="password" id="auth_pass" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500 transition-all">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Password (Min 6 chars)</label>
+                <input type="password" id="auth_pass" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500">
             </div>
             
-            <!-- Registration Only Fields -->
             <div id="reg-fields" class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Confirm Password</label>
-                    <input type="password" id="auth_confirm" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500 transition-all">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Confirm Password</label>
+                    <input type="password" id="auth_confirm" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500">
                 </div>
-                <div class="flex items-center gap-2 px-1">
+                <div class="flex items-center gap-2">
                     <input type="checkbox" id="auth_tnc" class="w-4 h-4 accent-emerald-600">
-                    <label for="auth_tnc" class="text-[11px] text-slate-500">I accept the <a href="#" class="text-emerald-600 underline">Terms & Conditions</a></label>
+                    <label for="auth_tnc" class="text-[11px] text-slate-500">I accept the Terms & Conditions</label>
                 </div>
             </div>
 
             <div class="flex flex-col gap-3 pt-4">
-                <button id="primary-btn" onclick="handleAuth()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100">CREATE ACCOUNT</button>
-                <button onclick="toggleAuthMode()" id="toggle-btn" class="text-slate-400 text-xs font-bold hover:text-emerald-600">Already have an account? Login</button>
+                <button id="primary-btn" onclick="handleAuth()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl">CREATE ACCOUNT</button>
+                <button onclick="toggleAuthMode()" id="toggle-btn" class="text-slate-400 text-xs font-bold">Already have an account? Login</button>
             </div>
         </div>
     </div>
-
     <script src="auth.js"></script>
 </body>
 </html>
