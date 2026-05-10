@@ -1,7 +1,8 @@
-const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://sbxtpvuieiokjawltqjq.supabase.co'; // Removed /rest/v1/
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Start on Registration mode by default
 let isLoginMode = false;
 
 function toggleAuthMode() {
@@ -9,28 +10,32 @@ function toggleAuthMode() {
     document.getElementById('auth-title').innerText = isLoginMode ? 'Login' : 'Create Account';
     document.getElementById('primary-btn').innerText = isLoginMode ? 'LOGIN' : 'CREATE ACCOUNT';
     document.getElementById('toggle-btn').innerText = isLoginMode ? "Don't have an account? Register" : "Already have an account? Login";
-    document.getElementById('reg-fields').style.display = isLoginMode ? 'none' : 'block';
+    
+    // Smoothly show/hide registration fields
+    const regFields = document.getElementById('reg-fields');
+    regFields.style.display = isLoginMode ? 'none' : 'block';
 }
 
 async function handleAuth() {
-    const phone = document.getElementById('auth_phone').value;
+    const phone = document.getElementById('auth_phone').value.trim();
     const password = document.getElementById('auth_pass').value;
 
     if (phone.length < 10) return alert("Please enter a valid phone number");
     if (password.length < 6) return alert("Password must be at least 6 characters");
 
     if (isLoginMode) {
-        // LOGIN LOGIC
-        // Note: Supabase uses email/pass by default. For phone/pass, we use a trick: 
-        // We format the phone as an email address internally (e.g., 080123@phone.com)
+        // --- LOGIN LOGIC ---
         const { data, error } = await _supabase.auth.signInWithPassword({
             email: `${phone}@phone.com`,
             password: password,
         });
-        if (error) return alert(error.message);
+
+        if (error) return alert("Login Error: " + error.message);
+        
+        // Successful login
         window.location.href = "index.html";
     } else {
-        // REGISTER LOGIC
+        // --- REGISTER LOGIC ---
         const confirm = document.getElementById('auth_confirm').value;
         const tnc = document.getElementById('auth_tnc').checked;
 
@@ -42,8 +47,19 @@ async function handleAuth() {
             password: password,
         });
 
-        if (error) return alert(error.message);
-        alert("Account created successfully! You can now login.");
+        if (error) return alert("Registration Error: " + error.message);
+        
+        alert("Account created successfully! Switching to Login.");
         toggleAuthMode();
     }
 }
+
+// Initial state setup to ensure Registration shows first on page load
+function init() {
+    isLoginMode = false;
+    document.getElementById('reg-fields').style.display = 'block';
+    document.getElementById('auth-title').innerText = 'Create Account';
+    document.getElementById('primary-btn').innerText = 'CREATE ACCOUNT';
+}
+
+init();
