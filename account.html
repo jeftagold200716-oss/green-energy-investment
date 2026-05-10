@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portfolio | Green Energy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 pb-24">
+    <div class="max-w-lg mx-auto p-6">
+        <h1 class="text-3xl font-black text-slate-800 mb-6">Account</h1>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-3xl shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Total Income</p>
+                <p id="total_income" class="text-lg font-black text-emerald-600">₦0.00</p>
+            </div>
+            <button onclick="logout()" class="bg-red-50 p-5 rounded-3xl flex flex-col items-center justify-center">
+                <span class="text-red-500 font-black text-xs uppercase">Logout</span>
+            </button>
+        </div>
+
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <button onclick="showTab('investments')" class="tab-btn active bg-slate-900 text-white px-4 py-2 rounded-full text-xs font-bold">My Products</button>
+            <button onclick="showTab('deposits')" class="tab-btn bg-white text-slate-400 px-4 py-2 rounded-full text-xs font-bold shadow-sm">Deposits</button>
+            <button onclick="showTab('withdrawals')" class="tab-btn bg-white text-slate-400 px-4 py-2 rounded-full text-xs font-bold shadow-sm">Withdrawals</button>
+        </div>
+
+        <div id="tab-content" class="space-y-4">
+            <p class="text-center text-slate-400 py-10">Loading history...</p>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'YOUR_KEY');
+
+        async function loadAccountData() {
+            const { data: { user } } = await _supabase.auth.getUser();
+            showTab('investments'); // Default tab
+        }
+
+        async function showTab(tab) {
+            // Update UI buttons
+            document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn bg-white text-slate-400 px-4 py-2 rounded-full text-xs font-bold shadow-sm');
+            event.target.className = 'tab-btn active bg-slate-900 text-white px-4 py-2 rounded-full text-xs font-bold';
+
+            const container = document.getElementById('tab-content');
+            container.innerHTML = '<div class="animate-pulse text-center py-10 text-slate-400 uppercase text-[10px] font-bold">Loading...</div>';
+
+            const { data: { user } } = await _supabase.auth.getUser();
+
+            if (tab === 'investments') {
+                const { data } = await _supabase.from('user_investments').select('*, products(*)').eq('user_id', user.id);
+                container.innerHTML = data.map(i => `
+                    <div class="bg-white p-5 rounded-3xl border border-slate-100">
+                        <h4 class="font-bold text-slate-800">${i.products.name}</h4>
+                        <p class="text-[10px] text-slate-400 uppercase">Invested: ₦${i.amount}</p>
+                        <div class="mt-2 text-xs font-bold text-emerald-600">Status: Running</div>
+                    </div>
+                `).join('') || '<p class="text-center text-slate-400">No active products.</p>';
+            } 
+            
+            else if (tab === 'deposits') {
+                const { data } = await _supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', {ascending: false});
+                container.innerHTML = data.map(d => `
+                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold">₦${d.amount}</p>
+                            <p class="text-[9px] text-slate-400">${new Date(d.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${d.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${d.status}</span>
+                    </div>
+                `).join('') || '<p class="text-center text-slate-400">No deposit history.</p>';
+            }
+
+            else if (tab === 'withdrawals') {
+                const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', {ascending: false});
+                container.innerHTML = data.map(w => `
+                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold">₦${w.amount}</p>
+                            <p class="text-[9px] text-slate-400">${new Date(w.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${w.status === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}">${w.status}</span>
+                    </div>
+                `).join('') || '<p class="text-center text-slate-400">No withdrawal history.</p>';
+            }
+        }
+
+        async function logout() {
+            await _supabase.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        loadAccountData();
+    </script>
+</body>
+</html>
