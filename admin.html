@@ -148,40 +148,54 @@ async function loadDeposits() {
 }
 
 async function handleDeposit(id, uid, amt, status) {
-    // 1. INSTANT DISAPPEAR: Hide the UI element immediately
+    // 1. INSTANT DISAPPEAR
     const element = document.getElementById(`dep-${id}`);
     if (element) element.style.display = 'none';
 
     try {
         if (status === 'approved') {
-            // 2. Fetch the current balance from the 'balance' column we just verified with SQL
-            const { data: profile, error: pError } = await _supabase.from('profiles').select('balance').eq('id', uid).single();
+            // 2. Fetch profile without using .single() to avoid the "coerce" error
+            const { data: profiles, error: pError } = await _supabase
+                .from('profiles')
+                .select('balance')
+                .eq('id', uid);
             
-            if (pError) throw new Error("Profile error: " + pError.message);
+            if (pError) throw new Error("Database error: " + pError.message);
+            
+            // Check if the user actually exists in the profiles table
+            if (!profiles || profiles.length === 0) {
+                throw new Error("User profile not found. The user might have been deleted.");
+            }
 
-            const currentBalance = Number(profile.balance || 0);
+            const currentBalance = Number(profiles[0].balance || 0);
             const newBalance = currentBalance + Number(amt);
 
             // 3. Update user balance
-            const { error: uError } = await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
+            const { error: uError } = await _supabase
+                .from('profiles')
+                .update({ balance: newBalance })
+                .eq('id', uid);
+
             if (uError) throw new Error("Balance update failed: " + uError.message);
         }
 
         // 4. Finalize the deposit status
-        const { error: dError } = await _supabase.from('deposits').update({ status: status }).eq('id', id);
+        const { error: dError } = await _supabase
+            .from('deposits')
+            .update({ status: status })
+            .eq('id', id);
+
         if (dError) throw dError;
 
-        // Success! (No alert needed so it stays smooth)
-        loadRevenue(); // Refresh total revenue in the background
+        loadRevenue(); 
         
     } catch (err) {
-        // If it fails, bring the request back so you can try again
+        // If it fails, bring it back so you can try again or see the error
         if (element) element.style.display = 'block';
         console.error(err);
-        alert("Action failed: " + err.message);
+        alert("Wait! " + err.message);
     }
 }
-
         async function loadWithdraws() {
             const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
             if (error) return;
