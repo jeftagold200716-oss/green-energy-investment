@@ -20,9 +20,11 @@
 
     <div id="welcomePopup" class="welcome-modal active">
         <div class="bg-white w-[90%] max-w-sm rounded-[2.5rem] p-8 relative animate-in fade-in zoom-in duration-300 shadow-2xl">
-            <button onclick="closePopup()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-1 rounded-full">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            <button onclick="closePopup()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full z-[2100]">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+    </svg>
+</button>
             <div class="text-center">
                 <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <img src="https://i.postimg.cc/L5j2sy4y/photo-2026-05-10-17-58-34.jpg" ... >
@@ -347,5 +349,16 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
             syncUserBalance();
         };
     </script>
+    <script>
+    // This is the function the button is looking for
+    function closePopup() {
+        const popup = document.getElementById('welcomePopup');
+        if (popup) {
+            // This forces the black background and the box to disappear
+            popup.style.setProperty('display', 'none', 'important');
+            popup.classList.remove('active');
+        }
+    }
+</script>
 </body>
 </html>
