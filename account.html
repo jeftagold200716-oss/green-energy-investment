@@ -65,49 +65,39 @@
     const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
     // 1. THE MIRROR FUNCTION (Matches Home Page Logic)
+  // 1. THE MIRROR FUNCTION (Updated for better detection)
     async function syncWithHomeBalance() {
-        // Get the phone number exactly how the home page does
-        const userPhone = localStorage.getItem('userPhone');
+        // Try all possible keys to make sure we find the phone number
+        const userPhone = localStorage.getItem('userPhone') || 
+                          localStorage.getItem('phone') || 
+                          localStorage.getItem('user_phone');
         
+        console.log("Checking for phone in storage:", userPhone);
+
         if (!userPhone) {
-            console.error("No user phone found in storage. Redirecting...");
-            window.location.href = "index.html";
-            return;
+            console.warn("No phone found. I won't redirect, but the balance will stay 0.");
+            // REMOVED the window.location.href line so it stops kicking you out
+            return; 
         }
 
-        console.log("Syncing balance for:", userPhone);
-
-        // Fetch from 'profiles' table using the phone number
         const { data: profile, error } = await _supabase
             .from('profiles')
             .select('*')
             .eq('phone', userPhone)
             .single();
 
-        if (error) {
-            console.error("Sync Error:", error.message);
-            return;
-        }
-
         if (profile) {
-            // Use the exact same column names as the dashboard
             const currentBal = profile.balance ?? 0;
             const currentInc = profile.total_income ?? profile.total_profit ?? 0;
 
-            // Update the UI
-            const balEl = document.getElementById('account_balance');
-            const incEl = document.getElementById('total_income');
-
-            if (balEl) balEl.innerText = `₦${Number(currentBal).toLocaleString()}`;
-            if (incEl) incEl.innerText = `₦${Number(currentInc).toLocaleString()}`;
+            document.getElementById('account_balance').innerText = `₦${Number(currentBal).toLocaleString()}`;
+            document.getElementById('total_income').innerText = `₦${Number(currentInc).toLocaleString()}`;
             
-            console.log("Balance Mirrored Successfully:", currentBal);
-            
-            // Now that we have the profile ID, load the tabs
-            loadTabData(profile.id);
+            // Set the ID for the tabs to work
+            window.currentUserId = profile.id;
+            showTab('investments');
         }
     }
-
     // 2. TAB LOADING LOGIC
     async function loadTabData(profileId) {
         // This ensures the tabs use the correct profile ID we just fetched
