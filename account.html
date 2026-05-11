@@ -122,7 +122,7 @@
 
     async function initAccount() {
         const phone = localStorage.getItem('userPhone');
-        if (!phone) { window.location.href = "index.html"; return; }
+    
 
         const { data, error } = await _supabase.from('profiles').select('*').eq('phone', phone).single();
         if (data) {
