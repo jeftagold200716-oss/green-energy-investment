@@ -93,7 +93,7 @@
     </nav>
 
     <script>
-        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
         function switchView(viewId, title) {
             document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
@@ -103,7 +103,10 @@
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.replace('text-emerald-600', 'text-slate-400');
             });
-            event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
+            // Fixed event targeting
+            if (event) {
+                event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
+            }
 
             if(viewId === 'deposits') loadDeposits();
             if(viewId === 'withdraws') loadWithdraws();
@@ -111,7 +114,6 @@
             if(viewId === 'revenue') loadRevenue();
         }
 
-        // --- PRODUCT PUBLISHING ---
         async function publishProduct() {
             const name = document.getElementById('p_name').value;
             const price = document.getElementById('p_price').value;
@@ -126,9 +128,10 @@
             else { alert("Product Live!"); location.reload(); }
         }
 
-        // --- DEPOSIT HANDLING ---
         async function loadDeposits() {
-            const { data } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+            const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+            if (error) return console.error(error);
+            
             const list = document.getElementById('deposit-list');
             list.innerHTML = data.map(d => `
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
@@ -144,18 +147,36 @@
         }
 
         async function handleDeposit(id, uid, amt, status) {
-            if (status === 'approved') {
-                const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', uid).single();
-                const newBalance = (profile.wallet_balance || 0) + Number(amt);
-                await _supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', uid);
+            try {
+                if (status === 'approved') {
+                    // CHANGE: Using 'balance' instead of 'wallet_balance'
+                    const { data: profile, error: pError } = await _supabase.from('profiles').select('balance').eq('id', uid).single();
+                    
+                    if (pError) throw new Error("Profile error: " + pError.message);
+
+                    const currentBalance = Number(profile.balance || 0);
+                    const newBalance = currentBalance + Number(amt);
+
+                    const { error: uError } = await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
+                    if (uError) throw new Error("Balance update failed: " + uError.message);
+                }
+
+                const { error: dError } = await _supabase.from('deposits').update({ status: status }).eq('id', id);
+                if (dError) throw dError;
+
+                alert(`Deposit ${status}!`);
+                loadDeposits();
+                loadRevenue();
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
             }
-            await _supabase.from('deposits').update({ status: status }).eq('id', id);
-            loadDeposits();
         }
 
-        // --- WITHDRAWAL HANDLING ---
         async function loadWithdraws() {
-            const { data } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+            const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+            if (error) return;
+            
             const list = document.getElementById('withdraw-list');
             list.innerHTML = data.map(w => `
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
@@ -171,26 +192,31 @@
         }
 
         async function handleWithdraw(id, uid, amt, status) {
-            if (status === 'rejected') {
-                const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', uid).single();
-                const newBalance = (profile.wallet_balance || 0) + Number(amt);
-                await _supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', uid);
+            try {
+                if (status === 'rejected') {
+                    const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', uid).single();
+                    const newBalance = (Number(profile.balance) || 0) + Number(amt);
+                    await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
+                }
+                await _supabase.from('withdrawals').update({ status: status }).eq('id', id);
+                alert("Withdrawal updated!");
+                loadWithdraws();
+                loadRevenue();
+            } catch (err) {
+                alert(err.message);
             }
-            await _supabase.from('withdrawals').update({ status: status }).eq('id', id);
-            loadWithdraws();
         }
 
-        // --- STATS & REVENUE ---
         async function loadUserStats() {
             const { data: users } = await _supabase.from('profiles').select('id');
-            document.getElementById('u-total').innerText = users.length;
+            if (users) document.getElementById('u-total').innerText = users.length;
         }
 
         async function loadRevenue() {
             const { data: dep } = await _supabase.from('deposits').select('amount').eq('status', 'approved');
             const { data: wit } = await _supabase.from('withdrawals').select('amount').eq('status', 'success');
-            const totalIn = dep ? dep.reduce((a, c) => a + c.amount, 0) : 0;
-            const totalOut = wit ? wit.reduce((a, c) => a + c.amount, 0) : 0;
+            const totalIn = dep ? dep.reduce((a, c) => a + Number(c.amount), 0) : 0;
+            const totalOut = wit ? wit.reduce((a, c) => a + Number(c.amount), 0) : 0;
             document.getElementById('rev-in').innerText = '₦' + totalIn.toLocaleString();
             document.getElementById('rev-out').innerText = '₦' + totalOut.toLocaleString();
         }
