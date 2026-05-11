@@ -60,112 +60,125 @@
             <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
         </a>
     </nav>
+<script>
+    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-  <script>
-        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
-
-        async function initAccount() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            if (!user) return window.location.href = "index.html";
-
-            // We fetch 'balance' for the main card and 'total_income' for the return field
-            const { data: profile, error } = await _supabase
-                .from('profiles')
-                .select('balance, wallet_balance, total_income, total_profit')
-                .eq('id', user.id)
-                .single();
-
-            if (error) {
-                console.error("Profile sync error:", error.message);
-                return;
-            }
-
-            if (profile) {
-                // 1. UPDATE MAIN WALLET BALANCE
-                const currentBalance = profile.balance ?? profile.wallet_balance ?? 0;
-                const balanceEl = document.getElementById('account_balance');
-                if (balanceEl) {
-                    balanceEl.innerText = `₦${Number(currentBalance).toLocaleString()}`;
-                }
-                
-                // 2. UPDATE TOTAL RETURN (Income from products)
-                // This uses 'total_income' or 'total_profit' from your database
-                const returns = profile.total_income ?? profile.total_profit ?? 0;
-                const incomeEl = document.getElementById('total_income');
-                if (incomeEl) {
-                    incomeEl.innerText = `₦${Number(returns).toLocaleString()}`;
-                }
-            }
-
-            showTab('investments');
-        }
-
-        async function showTab(tabName) {
-            const container = document.getElementById('tab-content');
-            const { data: { user } } = await _supabase.auth.getUser();
-
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn bg-white text-slate-400 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter shadow-sm border border-slate-100 transition-all";
-            });
-            document.getElementById(`btn-${tabName}`).className = "tab-btn bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter transition-all";
-
-            container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black">FETCHING HISTORY...</div>';
-
-            if (tabName === 'investments') {
-                const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', user.id);
-                renderInvestments(data);
-            } else if (tabName === 'deposits') {
-                const { data } = await _supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-                renderHistory(data, 'deposit');
-            } else if (tabName === 'withdrawals') {
-                const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-                renderHistory(data, 'withdrawal');
-            }
-        }
-
-        function renderInvestments(data) {
-            const container = document.getElementById('tab-content');
-            if (!data || data.length === 0) {
-                container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No active plants</div>';
-                return;
-            }
-            container.innerHTML = data.map(item => `
-                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Solar Plant'}</h4>
-                        <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-3 py-1 rounded-full uppercase">Running</span>
-                    </div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Investment: <span class="text-slate-800">₦${Number(item.amount).toLocaleString()}</span></p>
-                </div>
-            `).join('');
-        }
-
-        function renderHistory(data, type) {
-            const container = document.getElementById('tab-content');
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type} history</div>`;
-                return;
-            }
-            container.innerHTML = data.map(item => `
-                <div class="bg-white p-5 rounded-2xl flex justify-between items-center border border-slate-50">
-                    <div>
-                        <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
-                        <p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(item.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${item.status === 'approved' || item.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
-                        ${item.status}
-                    </span>
-                </div>
-            `).join('');
-        }
-
-        async function logout() {
-            await _supabase.auth.signOut();
+    async function initAccount() {
+        // 1. Get the current session user
+        const { data: { user }, error: authError } = await _supabase.auth.getUser();
+        
+        if (authError || !user) {
+            console.error("Auth error:", authError);
             window.location.href = "index.html";
+            return;
         }
 
-        initAccount();
-    </script>
+        // 2. Fetch the most up-to-date profile data
+        const { data: profile, error: profileError } = await _supabase
+            .from('profiles')
+            .select('balance, wallet_balance, total_income, total_profit')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError) {
+            console.error("Database fetch error:", profileError.message);
+            return;
+        }
+
+        console.log("Database Data Received:", profile); // This helps us debug!
+
+        if (profile) {
+            // --- SYNC AVAILABLE BALANCE (The Big Number) ---
+            // This matches the home page logic exactly
+            const finalBalance = profile.balance ?? profile.wallet_balance ?? 0;
+            const balanceDisplay = document.getElementById('account_balance');
+            if (balanceDisplay) {
+                balanceDisplay.innerText = '₦' + Number(finalBalance).toLocaleString();
+            }
+
+            // --- SYNC TOTAL INCOME (The Return from Products) ---
+            const finalReturns = profile.total_income ?? profile.total_profit ?? 0;
+            const incomeDisplay = document.getElementById('total_income');
+            if (incomeDisplay) {
+                incomeDisplay.innerText = '₦' + Number(finalReturns).toLocaleString();
+            }
+        }
+
+        // Load the products tab by default
+        showTab('investments');
+    }
+
+    // Tab switching logic
+    async function showTab(tabName) {
+        const container = document.getElementById('tab-content');
+        const { data: { user } } = await _supabase.auth.getUser();
+
+        // Update Button UI
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.className = "tab-btn bg-white text-slate-400 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter shadow-sm border border-slate-100 transition-all";
+        });
+        const activeBtn = document.getElementById(`btn-${tabName}`);
+        if (activeBtn) activeBtn.className = "tab-btn bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter transition-all";
+
+        container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black uppercase">Syncing...</div>';
+
+        if (tabName === 'investments') {
+            const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', user.id);
+            renderInvestments(data);
+        } else if (tabName === 'deposits') {
+            const { data } = await _supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+            renderHistory(data, 'deposit');
+        } else if (tabName === 'withdrawals') {
+            const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+            renderHistory(data, 'withdrawal');
+        }
+    }
+
+    // UI Rendering functions
+    function renderInvestments(data) {
+        const container = document.getElementById('tab-content');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No active investments</div>';
+            return;
+        }
+        container.innerHTML = data.map(item => `
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Solar Plant'}</h4>
+                    <span class="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2 py-1 rounded-lg">ACTIVE</span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Invested: ₦${Number(item.amount).toLocaleString()}</p>
+            </div>
+        `).join('');
+    }
+
+    function renderHistory(data, type) {
+        const container = document.getElementById('tab-content');
+        if (!data || data.length === 0) {
+            container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type} record</div>`;
+            return;
+        }
+        container.innerHTML = data.map(item => `
+            <div class="bg-white p-5 rounded-2xl flex justify-between items-center border border-slate-50">
+                <div>
+                    <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(item.created_at).toLocaleDateString()}</p>
+                </div>
+                <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${item.status === 'approved' || item.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
+                    ${item.status}
+                </span>
+            </div>
+        `).join('');
+    }
+
+    async function logout() {
+        await _supabase.auth.signOut();
+        window.location.href = "index.html";
+    }
+
+    // Start the script
+    initAccount();
+</script>
 
     <style>
         .nav-item { color: #94a3b8; transition: all 0.2s; }
