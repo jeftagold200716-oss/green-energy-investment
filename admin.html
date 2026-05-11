@@ -148,31 +148,50 @@ async function loadDeposits() {
 }
 
 async function handleDeposit(id, uid, amt, status) {
+    // 1. INSTANT DISAPPEAR
     const element = document.getElementById(`dep-${id}`);
     if (element) element.style.display = 'none';
 
     try {
         if (status === 'approved') {
-            const { data: profiles } = await _supabase.from('profiles').select('balance').eq('id', uid);
-            
-            if (profiles && profiles.length > 0) {
-                // User exists, so we credit them
-                const newBalance = Number(profiles[0].balance || 0) + Number(amt);
-                await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
+            // 2. Get current balance
+            const { data: profile, error: fetchError } = await _supabase
+                .from('profiles')
+                .select('balance')
+                .eq('id', uid)
+                .maybeSingle(); // maybeSingle won't crash if user is missing
+
+            if (fetchError) throw fetchError;
+
+            if (profile) {
+                // 3. User exists, calculate and update
+                const newBalance = Number(profile.balance || 0) + Number(amt);
+                const { error: updateError } = await _supabase
+                    .from('profiles')
+                    .update({ balance: newBalance })
+                    .eq('id', uid);
+                
+                if (updateError) throw updateError;
             } else {
-                // User DOES NOT exist. We skip the credit part but still approve the request
-                console.warn("Ghost user detected. Approving request without crediting balance.");
+                console.error("User not found in profiles table, skipping balance credit.");
             }
         }
 
-        // Finalize the deposit status (This clears it from your 'pending' list)
-        const { error: dError } = await _supabase.from('deposits').update({ status: status }).eq('id', id);
+        // 4. Mark the deposit as finished (Approved or Rejected)
+        const { error: dError } = await _supabase
+            .from('deposits')
+            .update({ status: status })
+            .eq('id', id);
+
         if (dError) throw dError;
 
+        console.log("Deposit finalized.");
         loadRevenue(); 
 
     } catch (err) {
+        // Bring it back if there's a real crash
         if (element) element.style.display = 'block';
+        console.error("Deposit Error:", err);
         alert("Error: " + err.message);
     }
 }
