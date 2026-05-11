@@ -128,50 +128,59 @@ const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.c
             else { alert("Product Live!"); location.reload(); }
         }
 
-        async function loadDeposits() {
-            const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-            if (error) return console.error(error);
+       // --- DEPOSIT HANDLING ---
+async function loadDeposits() {
+    const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+    if (error) return console.error(error);
+    
+    const list = document.getElementById('deposit-list');
+    list.innerHTML = data.map(d => `
+        <div id="dep-${d.id}" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
+            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">${d.reference || 'Manual'}</p>
+            <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
+            <p class="text-[10px] text-slate-400 font-bold mb-4">Phone: ${d.phone_number || 'N/A'}</p>
+            <div class="flex gap-2">
+                <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
+                <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
+            </div>
+        </div>
+    `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending deposits</p>';
+}
+
+async function handleDeposit(id, uid, amt, status) {
+    // 1. INSTANT DISAPPEAR: Hide the UI element immediately
+    const element = document.getElementById(`dep-${id}`);
+    if (element) element.style.display = 'none';
+
+    try {
+        if (status === 'approved') {
+            // 2. Fetch the current balance from the 'balance' column we just verified with SQL
+            const { data: profile, error: pError } = await _supabase.from('profiles').select('balance').eq('id', uid).single();
             
-            const list = document.getElementById('deposit-list');
-            list.innerHTML = data.map(d => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
-                    <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">${d.reference || 'Manual'}</p>
-                    <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
-                    <p class="text-[10px] text-slate-400 font-bold mb-4">Phone: ${d.phone_number || 'N/A'}</p>
-                    <div class="flex gap-2">
-                        <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
-                        <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
-                    </div>
-                </div>
-            `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending deposits</p>';
+            if (pError) throw new Error("Profile error: " + pError.message);
+
+            const currentBalance = Number(profile.balance || 0);
+            const newBalance = currentBalance + Number(amt);
+
+            // 3. Update user balance
+            const { error: uError } = await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
+            if (uError) throw new Error("Balance update failed: " + uError.message);
         }
 
-        async function handleDeposit(id, uid, amt, status) {
-            try {
-                if (status === 'approved') {
-                    // CHANGE: Using 'balance' instead of 'wallet_balance'
-                    const { data: profile, error: pError } = await _supabase.from('profiles').select('balance').eq('id', uid).single();
-                    
-                    if (pError) throw new Error("Profile error: " + pError.message);
+        // 4. Finalize the deposit status
+        const { error: dError } = await _supabase.from('deposits').update({ status: status }).eq('id', id);
+        if (dError) throw dError;
 
-                    const currentBalance = Number(profile.balance || 0);
-                    const newBalance = currentBalance + Number(amt);
-
-                    const { error: uError } = await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
-                    if (uError) throw new Error("Balance update failed: " + uError.message);
-                }
-
-                const { error: dError } = await _supabase.from('deposits').update({ status: status }).eq('id', id);
-                if (dError) throw dError;
-
-                alert(`Deposit ${status}!`);
-                loadDeposits();
-                loadRevenue();
-            } catch (err) {
-                console.error(err);
-                alert(err.message);
-            }
-        }
+        // Success! (No alert needed so it stays smooth)
+        loadRevenue(); // Refresh total revenue in the background
+        
+    } catch (err) {
+        // If it fails, bring the request back so you can try again
+        if (element) element.style.display = 'block';
+        console.error(err);
+        alert("Action failed: " + err.message);
+    }
+}
 
         async function loadWithdraws() {
             const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
