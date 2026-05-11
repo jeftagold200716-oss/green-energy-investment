@@ -148,51 +148,59 @@ async function loadDeposits() {
 }
 
 async function handleDeposit(id, uid, amt, status) {
-    // 1. INSTANT DISAPPEAR
     const element = document.getElementById(`dep-${id}`);
-    if (element) element.style.display = 'none';
+    const originalContent = element ? element.innerHTML : '';
 
     try {
+        // Show loading state on the button
+        if (element) element.style.opacity = "0.5";
+
         if (status === 'approved') {
-            // 2. Get current balance
+            // 1. Fetch current balance
             const { data: profile, error: fetchError } = await _supabase
                 .from('profiles')
                 .select('balance')
                 .eq('id', uid)
-                .maybeSingle(); // maybeSingle won't crash if user is missing
+                .maybeSingle();
 
-            if (fetchError) throw fetchError;
+            if (fetchError) throw new Error("Fetch Failed: " + fetchError.message);
+            if (!profile) throw new Error("User Profile does not exist in the database.");
 
-            if (profile) {
-                // 3. User exists, calculate and update
-                const newBalance = Number(profile.balance || 0) + Number(amt);
-                const { error: updateError } = await _supabase
-                    .from('profiles')
-                    .update({ balance: newBalance })
-                    .eq('id', uid);
-                
-                if (updateError) throw updateError;
-            } else {
-                console.error("User not found in profiles table, skipping balance credit.");
-            }
+            const newBalance = Number(profile.balance || 0) + Number(amt);
+
+            // 2. Update user balance
+            const { error: updateError } = await _supabase
+                .from('profiles')
+                .update({ balance: newBalance })
+                .eq('id', uid);
+            
+            if (updateError) throw new Error("Balance Update Blocked by RLS: " + updateError.message);
         }
 
-        // 4. Mark the deposit as finished (Approved or Rejected)
+        // 3. Update the deposit status (This is what makes it "disappear" on refresh)
         const { error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
             .eq('id', id);
 
-        if (dError) throw dError;
+        if (dError) throw new Error("Deposit Status Update Blocked: " + dError.message);
 
-        console.log("Deposit finalized.");
+        // 4. SUCCESS: Now we hide it because the database confirmed it
+        if (element) {
+            element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ SAVED TO DATABASE</div>`;
+            setTimeout(() => { element.remove(); }, 1500);
+        }
+
         loadRevenue(); 
 
     } catch (err) {
-        // Bring it back if there's a real crash
-        if (element) element.style.display = 'block';
-        console.error("Deposit Error:", err);
-        alert("Error: " + err.message);
+        // Reset if it fails
+        if (element) {
+            element.style.opacity = "1";
+            element.innerHTML = originalContent;
+        }
+        console.error("Critical Error:", err);
+        alert("🚨 DATABASE REJECTED: " + err.message + "\n\nDid you run the SQL code I sent?");
     }
 }
         async function loadWithdraws() {
