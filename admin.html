@@ -149,78 +149,66 @@ async function loadDeposits() {
 
 async function handleDeposit(id, uid, amt, status) {
     const element = document.getElementById(`dep-${id}`);
-    const originalContent = element ? element.innerHTML : '';
+    if (!element) return;
+    
+    const originalContent = element.innerHTML;
 
     try {
-        // Show loading state on the button
-        if (element) element.style.opacity = "0.5";
+        element.style.opacity = "0.5";
 
         if (status === 'approved') {
-            // 1. Fetch current balance
-            const { data: profile, error: fetchError } = await _supabase
+            // 1. Check if profile exists
+            const { data: profile } = await _supabase
                 .from('profiles')
                 .select('balance')
                 .eq('id', uid)
                 .maybeSingle();
 
-            if (fetchError) throw new Error("Fetch Failed: " + fetchError.message);
-            if (!profile) throw new Error("User Profile does not exist in the database.");
-
-            const newBalance = Number(profile.balance || 0) + Number(amt);
-
-            // 2. Update user balance
-            const { error: updateError } = await _supabase
-                .from('profiles')
-                .update({ balance: newBalance })
-                .eq('id', uid);
-            
-            if (updateError) throw new Error("Balance Update Blocked by RLS: " + updateError.message);
+            if (profile) {
+                // 2. User exists: Update balance
+                const newBalance = Number(profile.balance || 0) + Number(amt);
+                const { error: uError } = await _supabase
+                    .from('profiles')
+                    .update({ balance: newBalance })
+                    .eq('id', uid);
+                
+                if (uError) throw new Error("Balance Update Failed: " + uError.message);
+            } else {
+                // 3. AUTO-REPAIR: User missing! Create the profile and credit it
+                console.log("Profile missing. Creating profile for ID: " + uid);
+                const { error: iError } = await _supabase
+                    .from('profiles')
+                    .insert([{ 
+                        id: uid, 
+                        balance: Number(amt),
+                        created_at: new Date() 
+                    }]);
+                
+                if (iError) throw new Error("Auto-Profile Creation Failed: " + iError.message);
+            }
         }
 
-        // 3. Update the deposit status (This is what makes it "disappear" on refresh)
+        // 4. Finalize the deposit status (This stops it from coming back on refresh)
         const { error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
             .eq('id', id);
 
-        if (dError) throw new Error("Deposit Status Update Blocked: " + dError.message);
+        if (dError) throw new Error("Deposit status didn't update: " + dError.message);
 
-        // 4. SUCCESS: Now we hide it because the database confirmed it
-        if (element) {
-            element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ SAVED TO DATABASE</div>`;
-            setTimeout(() => { element.remove(); }, 1500);
-        }
+        // 5. SUCCESS UI
+        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ SUCCESS: CREDITED</div>`;
+        setTimeout(() => { element.remove(); }, 1500);
 
         loadRevenue(); 
 
     } catch (err) {
-        // Reset if it fails
-        if (element) {
-            element.style.opacity = "1";
-            element.innerHTML = originalContent;
-        }
-        console.error("Critical Error:", err);
-        alert("🚨 DATABASE REJECTED: " + err.message + "\n\nDid you run the SQL code I sent?");
+        element.style.opacity = "1";
+        element.innerHTML = originalContent;
+        console.error("Admin Error:", err);
+        alert("Error: " + err.message);
     }
 }
-        async function loadWithdraws() {
-            const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-            if (error) return;
-            
-            const list = document.getElementById('withdraw-list');
-            list.innerHTML = data.map(w => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
-                    <p class="text-lg font-black text-rose-600 mb-1">₦${Number(w.amount).toLocaleString()}</p>
-                    <p class="text-[10px] font-bold text-slate-500">${w.bank_name} | ${w.account_number}</p>
-                    <p class="text-[10px] font-black text-slate-800 uppercase mt-1">${w.account_name}</p>
-                    <div class="flex gap-2 mt-4">
-                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black text-[10px]">PAID</button>
-                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
-                    </div>
-                </div>
-            `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending withdrawals</p>';
-        }
-
         async function handleWithdraw(id, uid, amt, status) {
             try {
                 if (status === 'rejected') {
