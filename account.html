@@ -60,85 +60,105 @@
             <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
         </a>
     </nav>
-
 <script>
+    // Initialize Supabase
     const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-    async function fetchAccountData(userId) {
-        if (!userId) return;
+    // 1. THE MIRROR FUNCTION (Matches Home Page Logic)
+    async function syncWithHomeBalance() {
+        // Get the phone number exactly how the home page does
+        const userPhone = localStorage.getItem('userPhone');
         
+        if (!userPhone) {
+            console.error("No user phone found in storage. Redirecting...");
+            window.location.href = "index.html";
+            return;
+        }
+
+        console.log("Syncing balance for:", userPhone);
+
+        // Fetch from 'profiles' table using the phone number
         const { data: profile, error } = await _supabase
             .from('profiles')
-            .select('balance, wallet_balance, total_income, total_profit')
-            .eq('id', userId)
+            .select('*')
+            .eq('phone', userPhone)
             .single();
 
+        if (error) {
+            console.error("Sync Error:", error.message);
+            return;
+        }
+
         if (profile) {
-            const currentBal = profile.balance ?? profile.wallet_balance ?? 0;
+            // Use the exact same column names as the dashboard
+            const currentBal = profile.balance ?? 0;
             const currentInc = profile.total_income ?? profile.total_profit ?? 0;
 
-            document.getElementById('account_balance').innerText = `₦${Number(currentBal).toLocaleString()}`;
-            document.getElementById('total_income').innerText = `₦${Number(currentInc).toLocaleString()}`;
+            // Update the UI
+            const balEl = document.getElementById('account_balance');
+            const incEl = document.getElementById('total_income');
+
+            if (balEl) balEl.innerText = `₦${Number(currentBal).toLocaleString()}`;
+            if (incEl) incEl.innerText = `₦${Number(currentInc).toLocaleString()}`;
+            
+            console.log("Balance Mirrored Successfully:", currentBal);
+            
+            // Now that we have the profile ID, load the tabs
+            loadTabData(profile.id);
         }
     }
 
-    // Run on auth change
-    _supabase.auth.onAuthStateChange((event, session) => {
-        if (session?.user) {
-            fetchAccountData(session.user.id);
-            showTab('investments');
-        } else if (event === 'SIGNED_OUT') {
-            window.location.href = "index.html";
-        }
-    });
-
-    // Manual backup trigger
-    async function initCheck() {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (session?.user) {
-            fetchAccountData(session.user.id);
-            showTab('investments');
-        }
+    // 2. TAB LOADING LOGIC
+    async function loadTabData(profileId) {
+        // This ensures the tabs use the correct profile ID we just fetched
+        window.currentUserId = profileId; 
+        showTab('investments');
     }
 
     async function showTab(tabName) {
         const container = document.getElementById('tab-content');
-        const { data: { user } } = await _supabase.auth.getUser();
-        if(!user) return;
+        const userId = window.currentUserId;
+        
+        if(!userId) return;
 
+        // UI Styling for Buttons
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.className = "tab-btn bg-white text-slate-400 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter shadow-sm border border-slate-100 transition-all";
         });
         const activeBtn = document.getElementById(`btn-${tabName}`);
         if (activeBtn) activeBtn.className = "tab-btn bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter transition-all";
 
-        container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black uppercase">SYNCING...</div>';
+        container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black uppercase">Syncing...</div>';
 
-        if (tabName === 'investments') {
-            const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', user.id);
-            renderInvestments(data);
-        } else if (tabName === 'deposits') {
-            const { data } = await _supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-            renderHistory(data, 'deposit');
-        } else if (tabName === 'withdrawals') {
-            const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-            renderHistory(data, 'withdrawal');
+        try {
+            if (tabName === 'investments') {
+                const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', userId);
+                renderInvestments(data);
+            } else if (tabName === 'deposits') {
+                const { data } = await _supabase.from('deposits').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+                renderHistory(data, 'deposit');
+            } else if (tabName === 'withdrawals') {
+                const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+                renderHistory(data, 'withdrawal');
+            }
+        } catch (e) {
+            container.innerHTML = '<div class="text-center py-10 text-red-400 text-[10px] font-black">Connection Error</div>';
         }
     }
 
     function renderInvestments(data) {
         const container = document.getElementById('tab-content');
         if (!data || data.length === 0) {
-            container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No Active Products</div>';
+            container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No Products</div>';
             return;
         }
         container.innerHTML = data.map(item => `
             <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
-                    <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Power Plant'}</h4>
-                    <span class="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2 py-1 rounded-lg uppercase">Running</span>
+                    <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Solar Plan'}</h4>
+                    <span class="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2 py-1 rounded-lg uppercase">Active</span>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Invested: ₦${Number(item.amount).toLocaleString()}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Amount: ₦${Number(item.amount).toLocaleString()}</p>
             </div>
         `).join('');
     }
@@ -146,7 +166,7 @@
     function renderHistory(data, type) {
         const container = document.getElementById('tab-content');
         if (!data || data.length === 0) {
-            container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type} History</div>`;
+            container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type}s</div>`;
             return;
         }
         container.innerHTML = data.map(item => `
@@ -163,14 +183,14 @@
     }
 
     async function logout() {
+        localStorage.clear();
         await _supabase.auth.signOut();
         window.location.href = "index.html";
     }
 
-    // Initial load
-    initCheck();
+    // RUN IMMEDIATELY ON LOAD
+    window.onload = syncWithHomeBalance;
 </script>
-
 <style>
     .nav-item { color: #94a3b8; transition: all 0.2s; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
