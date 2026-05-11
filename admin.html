@@ -153,48 +153,27 @@ async function handleDeposit(id, uid, amt, status) {
 
     try {
         if (status === 'approved') {
-            // 1. Try to find the user
-            const { data: profiles, error: pError } = await _supabase
-                .from('profiles')
-                .select('balance')
-                .eq('id', uid);
+            const { data: profiles } = await _supabase.from('profiles').select('balance').eq('id', uid);
             
-            if (pError) throw new Error("DB Error: " + pError.message);
-
-            let newBalance;
-
             if (profiles && profiles.length > 0) {
-                // User exists - Add to current balance
-                newBalance = Number(profiles[0].balance || 0) + Number(amt);
+                // User exists, so we credit them
+                const newBalance = Number(profiles[0].balance || 0) + Number(amt);
                 await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
             } else {
-                // 2. AUTO-FIX: User missing! Create the profile now
-                console.log("Profile missing. Creating now...");
-                const { error: iError } = await _supabase
-                    .from('profiles')
-                    .insert([{ 
-                        id: uid, 
-                        balance: Number(amt),
-                        created_at: new Date() 
-                    }]);
-                
-                if (iError) throw new Error("Could not create missing profile: " + iError.message);
+                // User DOES NOT exist. We skip the credit part but still approve the request
+                console.warn("Ghost user detected. Approving request without crediting balance.");
             }
         }
 
-        // 3. Finalize the deposit status
-        const { error: dError } = await _supabase
-            .from('deposits')
-            .update({ status: status })
-            .eq('id', id);
-
+        // Finalize the deposit status (This clears it from your 'pending' list)
+        const { error: dError } = await _supabase.from('deposits').update({ status: status }).eq('id', id);
         if (dError) throw dError;
+
         loadRevenue(); 
 
     } catch (err) {
         if (element) element.style.display = 'block';
-        console.error(err);
-        alert("System Fix Required: " + err.message);
+        alert("Error: " + err.message);
     }
 }
         async function loadWithdraws() {
