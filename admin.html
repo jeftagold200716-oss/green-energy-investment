@@ -155,30 +155,30 @@ async function handleDeposit(id, uid, amt, status) {
         element.style.opacity = "0.5";
 
         if (status === 'approved') {
-            // 1. Get current balance directly
-            const { data: profile, error: fError } = await _supabase
+            // 1. Check if the user exists
+            const { data: profile, error: fetchError } = await _supabase
                 .from('profiles')
                 .select('balance')
                 .eq('id', uid)
                 .single();
 
-            if (fError) throw new Error("Could not find user profile to credit.");
+            if (fetchError || !profile) {
+                throw new Error(`User ID ${uid} not found in Profiles table. Money cannot be credited.`);
+            }
 
-            // 2. Calculate and Update balance
+            // 2. Perform the update
             const currentBalance = Number(profile.balance || 0);
-            const depositAmount = Number(amt);
-            const newTotal = currentBalance + depositAmount;
+            const newBalance = currentBalance + Number(amt);
 
-            const { error: uError } = await _supabase
+            const { error: updateError } = await _supabase
                 .from('profiles')
-                .update({ balance: newTotal })
+                .update({ balance: newBalance })
                 .eq('id', uid);
 
-            if (uError) throw new Error("Balance update failed: " + uError.message);
-            console.log(`Credited ₦${depositAmount} to user. New total: ₦${newTotal}`);
+            if (updateError) throw new Error("Balance Update Failed: " + updateError.message);
         }
 
-        // 3. Update the deposit status
+        // 3. Finalize the deposit status
         const { error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
@@ -186,16 +186,16 @@ async function handleDeposit(id, uid, amt, status) {
 
         if (dError) throw dError;
 
-        // Success UI
-        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ MONEY CREDITED</div>`;
-        setTimeout(() => { element.remove(); }, 1000);
+        // 4. Success UI
+        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ SAVED & CREDITED</div>`;
+        setTimeout(() => { element.remove(); }, 1500);
         
         loadRevenue();
 
     } catch (err) {
         element.style.opacity = "1";
         console.error(err);
-        alert("⚠️ Money not credited: " + err.message);
+        alert("⚠️ AT WORK: " + err.message);
     }
 }
         async function handleWithdraw(id, uid, amt, status) {
