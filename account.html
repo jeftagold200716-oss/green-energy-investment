@@ -60,83 +60,86 @@
             <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
         </a>
     </nav>
-
 <script>
     const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-    async function initAccount() {
-        try {
-            const { data: { user }, error: authError } = await _supabase.auth.getUser();
-            if (authError || !user) return window.location.href = "index.html";
+    // 1. THE MAIN SYNC FUNCTION
+    async function syncData() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (!user) return;
 
-            // Fetch profile with all possible balance/income columns
-            const { data: profile, error: profileError } = await _supabase
-                .from('profiles')
-                .select('balance, wallet_balance, total_income, total_profit')
-                .eq('id', user.id)
-                .single();
+        const { data: profile, error } = await _supabase
+            .from('profiles')
+            .select('balance, wallet_balance, total_income, total_profit')
+            .eq('id', user.id)
+            .single();
 
-            if (profileError) throw profileError;
+        if (profile) {
+            const currentBal = profile.balance ?? profile.wallet_balance ?? 0;
+            const currentInc = profile.total_income ?? profile.total_profit ?? 0;
 
-            if (profile) {
-                // Sync Main Balance
-                const finalBalance = profile.balance ?? profile.wallet_balance ?? 0;
-                document.getElementById('account_balance').innerText = '₦' + Number(finalBalance).toLocaleString();
-
-                // Sync Total Return (Income from products)
-                const finalReturns = profile.total_income ?? profile.total_profit ?? 0;
-                document.getElementById('total_income').innerText = '₦' + Number(finalReturns).toLocaleString();
-            }
-        } catch (err) {
-            console.error("Initialization Error:", err.message);
-        } finally {
-            // Always show the default tab even if data fails to load
-            showTab('investments');
+            // Force the text to change
+            document.getElementById('account_balance').innerHTML = `₦${Number(currentBal).toLocaleString()}`;
+            document.getElementById('total_income').innerHTML = `₦${Number(currentInc).toLocaleString()}`;
+            
+            console.log("Sync Successful:", currentBal);
         }
     }
+
+    // 2. RUN ONCE ON LOAD
+    async function initAccount() {
+        await syncData();
+        showTab('investments');
+    }
+
+    // 3. FORCE REPEAT (In case Supabase is slow)
+    // This will try to sync every 3 seconds automatically
+    const syncInterval = setInterval(async () => {
+        const balText = document.getElementById('account_balance').innerText;
+        if (balText === "₦0.00" || balText === "₦0") {
+            await syncData();
+        } else {
+            clearInterval(syncInterval); // Stop once we have the money shown
+        }
+    }, 3000);
 
     async function showTab(tabName) {
         const container = document.getElementById('tab-content');
         const { data: { user } } = await _supabase.auth.getUser();
 
-        // Update Button UI Styles
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.className = "tab-btn bg-white text-slate-400 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter shadow-sm border border-slate-100 transition-all";
         });
         const activeBtn = document.getElementById(`btn-${tabName}`);
         if (activeBtn) activeBtn.className = "tab-btn bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter transition-all";
 
-        container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black uppercase">Syncing...</div>';
+        container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black uppercase">Loading...</div>';
 
-        try {
-            if (tabName === 'investments') {
-                const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', user.id);
-                renderInvestments(data);
-            } else if (tabName === 'deposits') {
-                const { data } = await _supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-                renderHistory(data, 'deposit');
-            } else if (tabName === 'withdrawals') {
-                const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-                renderHistory(data, 'withdrawal');
-            }
-        } catch (err) {
-            container.innerHTML = '<div class="text-center py-10 text-red-400 text-[10px] font-black uppercase tracking-tighter">Connection Error.</div>';
+        if (tabName === 'investments') {
+            const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', user.id);
+            renderInvestments(data);
+        } else if (tabName === 'deposits') {
+            const { data } = await _supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+            renderHistory(data, 'deposit');
+        } else if (tabName === 'withdrawals') {
+            const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+            renderHistory(data, 'withdrawal');
         }
     }
 
     function renderInvestments(data) {
         const container = document.getElementById('tab-content');
         if (!data || data.length === 0) {
-            container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase tracking-tighter">No active plants found</div>';
+            container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No Products</div>';
             return;
         }
         container.innerHTML = data.map(item => `
             <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
-                    <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Solar Plant'}</h4>
-                    <span class="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2 py-1 rounded-lg">GENERATING</span>
+                    <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Product'}</h4>
+                    <span class="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2 py-1 rounded-lg uppercase">Generating</span>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Principal: ₦${Number(item.amount).toLocaleString()}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Amount: ₦${Number(item.amount).toLocaleString()}</p>
             </div>
         `).join('');
     }
@@ -144,7 +147,7 @@
     function renderHistory(data, type) {
         const container = document.getElementById('tab-content');
         if (!data || data.length === 0) {
-            container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase tracking-tighter">No ${type} history</div>`;
+            container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type}s</div>`;
             return;
         }
         container.innerHTML = data.map(item => `
