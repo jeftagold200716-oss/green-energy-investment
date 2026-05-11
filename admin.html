@@ -148,52 +148,53 @@ async function loadDeposits() {
 }
 
 async function handleDeposit(id, uid, amt, status) {
-    // 1. INSTANT DISAPPEAR
     const element = document.getElementById(`dep-${id}`);
     if (element) element.style.display = 'none';
 
     try {
         if (status === 'approved') {
-            // 2. Fetch profile without using .single() to avoid the "coerce" error
+            // 1. Try to find the user
             const { data: profiles, error: pError } = await _supabase
                 .from('profiles')
                 .select('balance')
                 .eq('id', uid);
             
-            if (pError) throw new Error("Database error: " + pError.message);
-            
-            // Check if the user actually exists in the profiles table
-            if (!profiles || profiles.length === 0) {
-                throw new Error("User profile not found. The user might have been deleted.");
+            if (pError) throw new Error("DB Error: " + pError.message);
+
+            let newBalance;
+
+            if (profiles && profiles.length > 0) {
+                // User exists - Add to current balance
+                newBalance = Number(profiles[0].balance || 0) + Number(amt);
+                await _supabase.from('profiles').update({ balance: newBalance }).eq('id', uid);
+            } else {
+                // 2. AUTO-FIX: User missing! Create the profile now
+                console.log("Profile missing. Creating now...");
+                const { error: iError } = await _supabase
+                    .from('profiles')
+                    .insert([{ 
+                        id: uid, 
+                        balance: Number(amt),
+                        created_at: new Date() 
+                    }]);
+                
+                if (iError) throw new Error("Could not create missing profile: " + iError.message);
             }
-
-            const currentBalance = Number(profiles[0].balance || 0);
-            const newBalance = currentBalance + Number(amt);
-
-            // 3. Update user balance
-            const { error: uError } = await _supabase
-                .from('profiles')
-                .update({ balance: newBalance })
-                .eq('id', uid);
-
-            if (uError) throw new Error("Balance update failed: " + uError.message);
         }
 
-        // 4. Finalize the deposit status
+        // 3. Finalize the deposit status
         const { error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
             .eq('id', id);
 
         if (dError) throw dError;
-
         loadRevenue(); 
-        
+
     } catch (err) {
-        // If it fails, bring it back so you can try again or see the error
         if (element) element.style.display = 'block';
         console.error(err);
-        alert("Wait! " + err.message);
+        alert("System Fix Required: " + err.message);
     }
 }
         async function loadWithdraws() {
