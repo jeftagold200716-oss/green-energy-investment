@@ -61,28 +61,40 @@
         </a>
     </nav>
 
-    <script>
+  <script>
         const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
         async function initAccount() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
-            // CRITICAL FIX: Pulling 'balance' to match home page
-            const { data: profile } = await _supabase
+            // We fetch 'balance' for the main card and 'total_income' for the return field
+            const { data: profile, error } = await _supabase
                 .from('profiles')
-                .select('balance, wallet_balance, total_income')
+                .select('balance, wallet_balance, total_income, total_profit')
                 .eq('id', user.id)
                 .single();
 
+            if (error) {
+                console.error("Profile sync error:", error.message);
+                return;
+            }
+
             if (profile) {
-                // Update Balance (same as home card)
+                // 1. UPDATE MAIN WALLET BALANCE
                 const currentBalance = profile.balance ?? profile.wallet_balance ?? 0;
-                document.getElementById('account_balance').innerText = `₦${Number(currentBalance).toLocaleString()}`;
+                const balanceEl = document.getElementById('account_balance');
+                if (balanceEl) {
+                    balanceEl.innerText = `₦${Number(currentBalance).toLocaleString()}`;
+                }
                 
-                // Update Total Income
-                const income = profile.total_income ?? 0;
-                document.getElementById('total_income').innerText = `₦${Number(income).toLocaleString()}`;
+                // 2. UPDATE TOTAL RETURN (Income from products)
+                // This uses 'total_income' or 'total_profit' from your database
+                const returns = profile.total_income ?? profile.total_profit ?? 0;
+                const incomeEl = document.getElementById('total_income');
+                if (incomeEl) {
+                    incomeEl.innerText = `₦${Number(returns).toLocaleString()}`;
+                }
             }
 
             showTab('investments');
@@ -114,16 +126,16 @@
         function renderInvestments(data) {
             const container = document.getElementById('tab-content');
             if (!data || data.length === 0) {
-                container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold">No active solar plants found.</div>';
+                container.innerHTML = '<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No active plants</div>';
                 return;
             }
             container.innerHTML = data.map(item => `
                 <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                     <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-black text-slate-800 text-sm">${item.products.name}</h4>
-                        <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-3 py-1 rounded-full uppercase">Generating</span>
+                        <h4 class="font-black text-slate-800 text-sm">${item.products?.name || 'Solar Plant'}</h4>
+                        <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-3 py-1 rounded-full uppercase">Running</span>
                     </div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Amount Invested: <span class="text-slate-800">₦${Number(item.amount).toLocaleString()}</span></p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Investment: <span class="text-slate-800">₦${Number(item.amount).toLocaleString()}</span></p>
                 </div>
             `).join('');
         }
@@ -131,7 +143,7 @@
         function renderHistory(data, type) {
             const container = document.getElementById('tab-content');
             if (!data || data.length === 0) {
-                container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type} history yet.</div>`;
+                container.innerHTML = `<div class="bg-white p-10 rounded-[2rem] text-center text-slate-400 text-xs font-bold uppercase">No ${type} history</div>`;
                 return;
             }
             container.innerHTML = data.map(item => `
