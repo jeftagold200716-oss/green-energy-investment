@@ -151,62 +151,38 @@ async function handleDeposit(id, uid, amt, status) {
     const element = document.getElementById(`dep-${id}`);
     if (!element) return;
     
-    const originalContent = element.innerHTML;
-
     try {
         element.style.opacity = "0.5";
 
         if (status === 'approved') {
-            // 1. Check if profile exists
-            const { data: profile } = await _supabase
-                .from('profiles')
-                .select('balance')
-                .eq('id', uid)
-                .maybeSingle();
+            // 1. CALL THE DATABASE FUNCTION DIRECTLY
+            // This bypasses the "Profile not found" and "Duplicate key" errors
+            const { error: rpcError } = await _supabase.rpc('admin_deposit_credit', { 
+                target_uid: uid, 
+                credit_amount: Number(amt) 
+            });
 
-            if (profile) {
-                // 2. User exists: Update balance
-                const newBalance = Number(profile.balance || 0) + Number(amt);
-                const { error: uError } = await _supabase
-                    .from('profiles')
-                    .update({ balance: newBalance })
-                    .eq('id', uid);
-                
-                if (uError) throw new Error("Balance Update Failed: " + uError.message);
-            } else {
-                // 3. AUTO-REPAIR: User missing! Create the profile and credit it
-                console.log("Profile missing. Creating profile for ID: " + uid);
-                const { error: iError } = await _supabase
-                    .from('profiles')
-                    .insert([{ 
-                        id: uid, 
-                        balance: Number(amt),
-                        created_at: new Date() 
-                    }]);
-                
-                if (iError) throw new Error("Auto-Profile Creation Failed: " + iError.message);
-            }
+            if (rpcError) throw new Error("Credit Failed: " + rpcError.message);
         }
 
-        // 4. Finalize the deposit status (This stops it from coming back on refresh)
+        // 2. Finalize the deposit status so it disappears forever
         const { error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
             .eq('id', id);
 
-        if (dError) throw new Error("Deposit status didn't update: " + dError.message);
+        if (dError) throw new Error("Status update failed: " + dError.message);
 
-        // 5. SUCCESS UI
-        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ SUCCESS: CREDITED</div>`;
-        setTimeout(() => { element.remove(); }, 1500);
-
-        loadRevenue(); 
+        // 3. SUCCESS UI
+        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ DONE & CREDITED</div>`;
+        setTimeout(() => { element.remove(); }, 1000);
+        
+        loadRevenue();
 
     } catch (err) {
         element.style.opacity = "1";
-        element.innerHTML = originalContent;
-        console.error("Admin Error:", err);
-        alert("Error: " + err.message);
+        console.error(err);
+        alert("🚨 FINAL ERROR: " + err.message);
     }
 }
         async function handleWithdraw(id, uid, amt, status) {
