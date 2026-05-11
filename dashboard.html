@@ -303,23 +303,27 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
         </a>
     </nav>
 
-    <script src="app.js"></script>
+  <script src="app.js"></script>
+
     <script>
-        // 1. Initialize Supabase (Use your existing credentials)
+        // Initialize Supabase
         const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-        // 2. Function to load and sync balance
+        // Function to fix the X button and close the popup
+        function closePopup() {
+            const popup = document.getElementById('welcomePopup');
+            if (popup) {
+                popup.classList.remove('active');
+                popup.style.display = 'none'; // Forces it to vanish
+            }
+        }
+
+        // Function to update the balance numbers
         async function syncUserBalance() {
             try {
-                // Get logged in user
                 const { data: { user } } = await _supabase.auth.getUser();
-                
-                if (!user) {
-                    console.log("No user logged in");
-                    return;
-                }
+                if (!user) return;
 
-                // Fetch the 'balance' column we fixed in the database
                 const { data: profile, error } = await _supabase
                     .from('profiles')
                     .select('balance, wallet_balance')
@@ -328,30 +332,19 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
 
                 if (error) throw error;
 
-                // Update the Dashboard Total Assets display
                 const balanceDisplay = document.getElementById('balance');
                 if (balanceDisplay && profile) {
-                    // Use 'balance' as primary, fallback to 'wallet_balance' if balance is null
                     const finalAmount = profile.balance ?? profile.wallet_balance ?? 0;
-                    balanceDisplay.innerText = '₦' + Number(finalAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
+                    balanceDisplay.innerText = '₦' + Number(finalAmount).toLocaleString();
                 }
-
             } catch (err) {
                 console.error("Balance Sync Error:", err.message);
             }
         }
 
-        // 3. UI Helper Functions
-        function closePopup() {
-            document.getElementById('welcomePopup').classList.remove('active');
-        }
-
-        // 4. Run sync on page load
+        // Run these when the page opens
         window.onload = () => {
             syncUserBalance();
-            
-            // Optional: Auto-refresh balance every 30 seconds
-            setInterval(syncUserBalance, 30000);
         };
     </script>
 </body>
