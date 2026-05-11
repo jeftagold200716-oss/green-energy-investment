@@ -108,8 +108,10 @@
     </nav>
 
 <script>
+    // Initialize Supabase
     const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
+    // TIER DATA - Hardcoded so it always works
     const tierData = [
         { level: 1, name: "TIER 1", daily: "150", products: "Bronze Products", maxW: "5k", times: "2x Daily", price: "Free" },
         { level: 2, name: "TIER 2", daily: "250", products: "Bronze & Silver", maxW: "15k", times: "4x Daily", price: "3,000" },
@@ -120,27 +122,40 @@
 
     let currentUser = null;
 
+    // 1. Initialize and get Balance
     async function initAccount() {
-        const phone = localStorage.getItem('userPhone');
-    
+        const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        console.log("Attempting to load account for:", phone);
+
+        if (!phone) {
+            console.error("No phone found in storage");
+            return;
+        }
 
         const { data, error } = await _supabase.from('profiles').select('*').eq('phone', phone).single();
+        
         if (data) {
             currentUser = data;
             document.getElementById('acc_balance').innerText = `₦${Number(data.balance || 0).toLocaleString()}`;
             document.getElementById('total_income').innerText = `₦${Number(data.total_income || 0).toLocaleString()}`;
             document.getElementById('current_tier_badge').innerText = `Tier ${data.tier || 1}`;
-            showSection('products'); // Default view
+            showSection('products'); // Load first tab
+        } else {
+            console.error("Database Error:", error);
         }
     }
 
+    // 2. Open Tier Modal (Now works even if database is slow)
     function openTierModal() {
-        document.getElementById('tier_modal').classList.remove('hidden');
+        const modal = document.getElementById('tier_modal');
         const list = document.getElementById('tier_list');
-        const userTier = currentUser.tier || 1;
+        modal.classList.remove('hidden');
+
+        // If currentUser isn't loaded yet, default to Tier 1
+        const userTier = currentUser ? (currentUser.tier || 1) : 1;
 
         list.innerHTML = tierData.map(t => `
-            <div class="tier-card p-6 rounded-[2rem] border ${userTier === t.level ? 'bg-emerald-500 border-emerald-400 text-white' : 'bg-white/5 border-white/10 text-white'}">
+            <div class="tier-card p-6 rounded-[2rem] border ${userTier === t.level ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-white/5 border-white/10 text-white'} mb-4">
                 <div class="flex justify-between items-center mb-4">
                     <h4 class="font-black text-lg">${t.name}</h4>
                     <span class="text-[10px] font-black uppercase opacity-70">${t.price === 'Free' ? 'Free' : '₦'+t.price}</span>
@@ -153,77 +168,94 @@
                 </ul>
                 ${userTier === t.level 
                     ? '<div class="text-center font-black text-xs tracking-widest py-3 border border-white/20 rounded-xl">CURRENT TIER</div>'
-                    : `<button onclick="window.location.href='deposit.html'" class="w-full bg-white text-slate-900 py-3 rounded-xl font-black text-xs uppercase transition-transform active:scale-95">Upgrade Now</button>`
+                    : `<button onclick="window.location.href='deposit.html'" class="w-full bg-white text-slate-900 py-3 rounded-xl font-black text-xs uppercase">Upgrade Now</button>`
                 }
             </div>
         `).join('');
     }
 
-    function closeTierModal() { document.getElementById('tier_modal').classList.add('hidden'); }
+    function closeTierModal() {
+        document.getElementById('tier_modal').classList.add('hidden');
+    }
 
+    // 3. Tab Switching Logic
     async function showSection(type) {
         const container = document.getElementById('section_container');
-        container.innerHTML = '<div class="text-center py-10 animate-pulse font-black text-[10px] text-slate-400 tracking-widest">LOADING...</div>';
+        if (!currentUser) {
+            container.innerHTML = '<p class="text-center text-slate-400 text-xs">Waiting for account data...</p>';
+            return;
+        }
 
-        if (type === 'products') {
-            const { data } = await _supabase.from('user_investments').select('*, products(*)').eq('user_id', currentUser.id);
-            const active = data?.filter(i => i.status === 'active') || [];
-            const expired = data?.filter(i => i.status === 'expired') || [];
-            
-            container.innerHTML = `
-                <div class="flex gap-2 mb-4">
-                    <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
-                        <p class="text-[9px] font-black text-emerald-600 uppercase">Active Products</p>
-                        <p class="text-xl font-black text-emerald-700">${active.length}</p>
+        container.innerHTML = '<div class="text-center py-10 animate-pulse font-black text-[10px] text-slate-400 tracking-widest">SYNCING...</div>';
+
+        try {
+            if (type === 'products') {
+                const { data } = await _supabase.from('user_investments').select('*, products(*)').eq('user_id', currentUser.id);
+                const active = data?.filter(i => i.status === 'active') || [];
+                const expired = data?.filter(i => i.status === 'expired') || [];
+                
+                container.innerHTML = `
+                    <div class="flex gap-2 mb-4">
+                        <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
+                            <p class="text-[9px] font-black text-emerald-600 uppercase">Active</p>
+                            <p class="text-xl font-black text-emerald-700">${active.length}</p>
+                        </div>
+                        <div class="flex-1 bg-slate-100 p-4 rounded-2xl text-center">
+                            <p class="text-[9px] font-black text-slate-400 uppercase">Expired</p>
+                            <p class="text-xl font-black text-slate-500">${expired.length}</p>
+                        </div>
                     </div>
-                    <div class="flex-1 bg-slate-100 p-4 rounded-2xl text-center">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Expired Products</p>
-                        <p class="text-xl font-black text-slate-500">${expired.length}</p>
+                    ${active.length > 0 ? active.map(i => `
+                        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center mb-2">
+                            <div><p class="font-black text-slate-800 text-sm">${i.products?.name || 'Investment'}</p><p class="text-[10px] text-slate-400 font-bold uppercase">₦${Number(i.amount).toLocaleString()}</p></div>
+                            <span class="text-[9px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full uppercase">Running</span>
+                        </div>
+                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Active Products</p>'}
+                `;
+            } else if (type === 'deposits') {
+                const { data } = await _supabase.from('deposits').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+                container.innerHTML = (data && data.length > 0) ? data.map(d => `
+                    <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center mb-2">
+                        <div><p class="font-black text-slate-800 text-sm">₦${Number(d.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(d.created_at).toLocaleDateString()}</p></div>
+                        <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${d.status === 'approved' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}">${d.status}</span>
                     </div>
-                </div>
-                ${active.map(i => `<div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
-                    <div><p class="font-black text-slate-800 text-sm">${i.products?.name}</p><p class="text-[10px] text-slate-400 font-bold uppercase">₦${Number(i.amount).toLocaleString()}</p></div>
-                    <span class="text-[9px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full uppercase">Running</span>
-                </div>`).join('')}
-            `;
-        } else if (type === 'deposits') {
-            const { data } = await _supabase.from('deposits').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-            container.innerHTML = data.map(d => `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center">
-                    <div><p class="font-black text-slate-800">₦${Number(d.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(d.created_at).toLocaleDateString()}</p></div>
-                    <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${d.status === 'approved' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}">${d.status}</span>
-                </div>
-            `).join('');
-        } else if (type === 'withdrawals') {
-            const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-            container.innerHTML = data.map(w => `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center">
-                    <div><p class="font-black text-slate-800">₦${Number(w.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(w.created_at).toLocaleDateString()}</p></div>
-                    <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${w.status === 'success' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}">${w.status}</span>
-                </div>
-            `).join('');
-        } else if (type === 'team') {
-            const { data: team } = await _supabase.from('profiles').select('*').eq('referred_by', currentUser.id);
-            const totalEarned = team?.length * 500 || 0; // Example commission
-            container.innerHTML = `
-                <div class="bg-slate-900 p-6 rounded-[2rem] text-white mb-4">
-                    <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Referral Earnings</p>
-                    <p class="text-2xl font-black mt-1">₦${totalEarned.toLocaleString()}</p>
-                    <p class="text-[9px] text-slate-400 mt-2">Total Referrals: ${team?.length || 0}</p>
-                </div>
-                ${team.map(m => `
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
-                        <p class="font-black text-xs text-slate-800">${m.phone.substring(0,5)}****</p>
-                        <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-lg uppercase italic">Tier ${m.tier || 1}</span>
+                `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Deposit History</p>';
+            } else if (type === 'withdrawals') {
+                const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+                container.innerHTML = (data && data.length > 0) ? data.map(w => `
+                    <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center mb-2">
+                        <div><p class="font-black text-slate-800 text-sm">₦${Number(w.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(w.created_at).toLocaleDateString()}</p></div>
+                        <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${w.status === 'success' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}">${w.status}</span>
                     </div>
-                `).join('')}
-            `;
+                `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Withdrawal History</p>';
+            } else if (type === 'team') {
+                const { data: team } = await _supabase.from('profiles').select('*').eq('referred_by', currentUser.id);
+                container.innerHTML = `
+                    <div class="bg-slate-900 p-6 rounded-[2rem] text-white mb-4">
+                        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Referral Stats</p>
+                        <p class="text-2xl font-black mt-1">Total: ${team?.length || 0}</p>
+                    </div>
+                    ${team && team.length > 0 ? team.map(m => `
+                        <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center mb-2">
+                            <p class="font-black text-xs text-slate-800">${m.phone.substring(0,6)}***</p>
+                            <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-lg uppercase">Tier ${m.tier || 1}</span>
+                        </div>
+                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Team Members Yet</p>'}
+                `;
+            }
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<p class="text-center text-red-400 text-[10px] font-black uppercase">SYNC ERROR</p>';
         }
     }
 
-    function logout() { localStorage.clear(); window.location.href = "index.html"; }
+    function logout() {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
 
-    initAccount();
+    // Run when page loads
+    window.onload = initAccount;
 </script>
 </body>
 </html>
