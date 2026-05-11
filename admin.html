@@ -154,27 +154,32 @@ async function handleDeposit(id, uid, amt, status) {
     try {
         element.style.opacity = "0.5";
 
+        // 1. CREDIT THE USER
         if (status === 'approved') {
-            // 1. CALL THE DATABASE FUNCTION DIRECTLY
-            // This bypasses the "Profile not found" and "Duplicate key" errors
             const { error: rpcError } = await _supabase.rpc('admin_deposit_credit', { 
                 target_uid: uid, 
                 credit_amount: Number(amt) 
             });
-
-            if (rpcError) throw new Error("Credit Failed: " + rpcError.message);
+            if (rpcError) throw new Error("Credit failed: " + rpcError.message);
         }
 
-        // 2. Finalize the deposit status so it disappears forever
-        const { error: dError } = await _supabase
+        // 2. UPDATE DEPOSIT STATUS
+        // We use .select() at the end to confirm the database actually changed the row
+        const { data, error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
-            .eq('id', id);
+            .eq('id', id)
+            .select();
 
-        if (dError) throw new Error("Status update failed: " + dError.message);
+        if (dError) throw new Error("Status update rejected: " + dError.message);
+        
+        // 3. VERIFY: If data is empty, it means RLS blocked the update
+        if (!data || data.length === 0) {
+            throw new Error("Database blocked the update. Check your RLS policies!");
+        }
 
-        // 3. SUCCESS UI
-        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ DONE & CREDITED</div>`;
+        // SUCCESS UI
+        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ DATABASE UPDATED</div>`;
         setTimeout(() => { element.remove(); }, 1000);
         
         loadRevenue();
@@ -182,7 +187,7 @@ async function handleDeposit(id, uid, amt, status) {
     } catch (err) {
         element.style.opacity = "1";
         console.error(err);
-        alert("🚨 FINAL ERROR: " + err.message);
+        alert("🚨 DATABASE REJECTION: " + err.message);
     }
 }
         async function handleWithdraw(id, uid, amt, status) {
