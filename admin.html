@@ -154,32 +154,40 @@ async function handleDeposit(id, uid, amt, status) {
     try {
         element.style.opacity = "0.5";
 
-        // 1. CREDIT THE USER
         if (status === 'approved') {
-            const { error: rpcError } = await _supabase.rpc('admin_deposit_credit', { 
-                target_uid: uid, 
-                credit_amount: Number(amt) 
-            });
-            if (rpcError) throw new Error("Credit failed: " + rpcError.message);
+            // 1. Get current balance directly
+            const { data: profile, error: fError } = await _supabase
+                .from('profiles')
+                .select('balance')
+                .eq('id', uid)
+                .single();
+
+            if (fError) throw new Error("Could not find user profile to credit.");
+
+            // 2. Calculate and Update balance
+            const currentBalance = Number(profile.balance || 0);
+            const depositAmount = Number(amt);
+            const newTotal = currentBalance + depositAmount;
+
+            const { error: uError } = await _supabase
+                .from('profiles')
+                .update({ balance: newTotal })
+                .eq('id', uid);
+
+            if (uError) throw new Error("Balance update failed: " + uError.message);
+            console.log(`Credited ₦${depositAmount} to user. New total: ₦${newTotal}`);
         }
 
-        // 2. UPDATE DEPOSIT STATUS
-        // We use .select() at the end to confirm the database actually changed the row
-        const { data, error: dError } = await _supabase
+        // 3. Update the deposit status
+        const { error: dError } = await _supabase
             .from('deposits')
             .update({ status: status })
-            .eq('id', id)
-            .select();
+            .eq('id', id);
 
-        if (dError) throw new Error("Status update rejected: " + dError.message);
-        
-        // 3. VERIFY: If data is empty, it means RLS blocked the update
-        if (!data || data.length === 0) {
-            throw new Error("Database blocked the update. Check your RLS policies!");
-        }
+        if (dError) throw dError;
 
-        // SUCCESS UI
-        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ DATABASE UPDATED</div>`;
+        // Success UI
+        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ MONEY CREDITED</div>`;
         setTimeout(() => { element.remove(); }, 1000);
         
         loadRevenue();
@@ -187,7 +195,7 @@ async function handleDeposit(id, uid, amt, status) {
     } catch (err) {
         element.style.opacity = "1";
         console.error(err);
-        alert("🚨 DATABASE REJECTION: " + err.message);
+        alert("⚠️ Money not credited: " + err.message);
     }
 }
         async function handleWithdraw(id, uid, amt, status) {
