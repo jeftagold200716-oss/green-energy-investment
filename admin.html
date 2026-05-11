@@ -154,48 +154,24 @@ async function handleDeposit(id, uid, amt, status) {
     try {
         element.style.opacity = "0.5";
 
-        if (status === 'approved') {
-            // 1. Check if the user exists
-            const { data: profile, error: fetchError } = await _supabase
-                .from('profiles')
-                .select('balance')
-                .eq('id', uid)
-                .single();
-
-            if (fetchError || !profile) {
-                throw new Error(`User ID ${uid} not found in Profiles table. Money cannot be credited.`);
-            }
-
-            // 2. Perform the update
-            const currentBalance = Number(profile.balance || 0);
-            const newBalance = currentBalance + Number(amt);
-
-            const { error: updateError } = await _supabase
-                .from('profiles')
-                .update({ balance: newBalance })
-                .eq('id', uid);
-
-            if (updateError) throw new Error("Balance Update Failed: " + updateError.message);
-        }
-
-        // 3. Finalize the deposit status
-        const { error: dError } = await _supabase
+        // We ONLY update the status. 
+        // The SQL Trigger we just ran handles the money automatically!
+        const { error } = await _supabase
             .from('deposits')
             .update({ status: status })
             .eq('id', id);
 
-        if (dError) throw dError;
+        if (error) throw error;
 
-        // 4. Success UI
-        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ SAVED & CREDITED</div>`;
-        setTimeout(() => { element.remove(); }, 1500);
+        // Success UI
+        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ DATABASE UPDATED</div>`;
+        setTimeout(() => { element.remove(); }, 1000);
         
         loadRevenue();
 
     } catch (err) {
         element.style.opacity = "1";
-        console.error(err);
-        alert("⚠️ AT WORK: " + err.message);
+        alert("SQL Error: " + err.message);
     }
 }
         async function handleWithdraw(id, uid, amt, status) {
