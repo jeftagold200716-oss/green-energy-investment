@@ -8,19 +8,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
-<body class="bg-slate-50 pb-28">
+<body class="bg-slate-50 pb-32">
 
     <div class="max-w-lg mx-auto p-6">
         <h1 class="text-3xl font-black text-slate-800 mb-6">Account</h1>
 
-        <div class="grid grid-cols-2 gap-4 mb-8">
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Income</p>
-                <p id="total_income" class="text-xl font-black text-emerald-600 mt-1">₦0.00</p>
+        <div class="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+            <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest opacity-80">Available Balance</p>
+            <h2 id="account_balance" class="text-3xl font-black mt-2">₦0.00</h2>
+            
+            <div class="flex gap-4 mt-6">
+                <div class="bg-white/10 px-4 py-2 rounded-xl">
+                    <p class="text-[9px] text-slate-400 uppercase font-bold">Total Income</p>
+                    <p id="total_income" class="text-sm font-black text-emerald-400">₦0.00</p>
+                </div>
+                <button onclick="logout()" class="ml-auto bg-red-500/20 hover:bg-red-500/40 text-red-400 px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all">
+                    Sign Out
+                </button>
             </div>
-            <button onclick="logout()" class="bg-red-50 p-6 rounded-[2rem] flex flex-col items-center justify-center border border-red-100 active:scale-95 transition-all">
-                <span class="text-red-500 font-black text-xs uppercase">Sign Out</span>
-            </button>
         </div>
 
         <div class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
@@ -32,45 +37,54 @@
         <div id="tab-content" class="space-y-4">
             <div class="text-center py-20">
                 <div class="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p class="text-slate-400 text-[10px] font-bold uppercase">Loading your data...</p>
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Syncing account...</p>
             </div>
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-50">
-        <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-400">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+        <a href="dashboard.html" class="nav-item flex flex-col items-center gap-1">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-            <span class="text-[9px] font-black uppercase">Home</span>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Home</span>
         </a>
-        <a href="deposit.html" class="flex flex-col items-center gap-1 text-slate-400">
+        <a href="deposit.html" class="nav-item flex flex-col items-center gap-1">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            <span class="text-[9px] font-black uppercase">Deposit</span>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Deposit</span>
         </a>
-        <a href="withdraw.html" class="flex flex-col items-center gap-1 text-slate-400">
+        <a href="withdraw.html" class="nav-item flex flex-col items-center gap-1">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            <span class="text-[9px] font-black uppercase">Withdraw</span>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Withdraw</span>
         </a>
-        <a href="account.html" class="flex flex-col items-center gap-1 text-emerald-600">
+        <a href="account.html" class="nav-item flex flex-col items-center gap-1 text-emerald-600">
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
-            <span class="text-[9px] font-black uppercase">Account</span>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
         </a>
     </nav>
 
     <script>
-        // --- INITIALIZE SUPABASE ---
         const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
         async function initAccount() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
-            // Get Total Income from Profile
-            const { data: profile } = await _supabase.from('profiles').select('total_income').eq('id', user.id).single();
+            // CRITICAL FIX: Pulling 'balance' to match home page
+            const { data: profile } = await _supabase
+                .from('profiles')
+                .select('balance, wallet_balance, total_income')
+                .eq('id', user.id)
+                .single();
+
             if (profile) {
-                document.getElementById('total_income').innerText = `₦${profile.total_income.toLocaleString()}`;
+                // Update Balance (same as home card)
+                const currentBalance = profile.balance ?? profile.wallet_balance ?? 0;
+                document.getElementById('account_balance').innerText = `₦${Number(currentBalance).toLocaleString()}`;
+                
+                // Update Total Income
+                const income = profile.total_income ?? 0;
+                document.getElementById('total_income').innerText = `₦${Number(income).toLocaleString()}`;
             }
 
-            // Load default tab
             showTab('investments');
         }
 
@@ -78,15 +92,13 @@
             const container = document.getElementById('tab-content');
             const { data: { user } } = await _supabase.auth.getUser();
 
-            // 1. Update Button Styles
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.className = "tab-btn bg-white text-slate-400 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter shadow-sm border border-slate-100 transition-all";
             });
             document.getElementById(`btn-${tabName}`).className = "tab-btn bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-tighter transition-all";
 
-            container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black">SYNCING DATA...</div>';
+            container.innerHTML = '<div class="text-center py-10 text-slate-400 animate-pulse text-[10px] font-black">FETCHING HISTORY...</div>';
 
-            // 2. Fetch Data Based on Tab
             if (tabName === 'investments') {
                 const { data } = await _supabase.from('user_investments').select('*, products(name)').eq('user_id', user.id);
                 renderInvestments(data);
@@ -108,10 +120,10 @@
             container.innerHTML = data.map(item => `
                 <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                     <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-black text-slate-800">${item.products.name}</h4>
-                        <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-3 py-1 rounded-full uppercase">Active</span>
+                        <h4 class="font-black text-slate-800 text-sm">${item.products.name}</h4>
+                        <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-3 py-1 rounded-full uppercase">Generating</span>
                     </div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Amount Invested: <span class="text-slate-800">₦${item.amount}</span></p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Amount Invested: <span class="text-slate-800">₦${Number(item.amount).toLocaleString()}</span></p>
                 </div>
             `).join('');
         }
@@ -125,7 +137,7 @@
             container.innerHTML = data.map(item => `
                 <div class="bg-white p-5 rounded-2xl flex justify-between items-center border border-slate-50">
                     <div>
-                        <p class="font-black text-slate-800 text-sm">₦${item.amount.toLocaleString()}</p>
+                        <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
                         <p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(item.created_at).toLocaleDateString()}</p>
                     </div>
                     <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${item.status === 'approved' || item.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
@@ -142,40 +154,10 @@
 
         initAccount();
     </script>
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-    
-    <a href="dashboard.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-        <span class="text-[9px] font-black uppercase tracking-tighter">Home</span>
-    </a>
 
-    <a href="deposit.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        <span class="text-[9px] font-black uppercase tracking-tighter">Deposit</span>
-    </a>
-
-    <a href="withdraw.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-        <span class="text-[9px] font-black uppercase tracking-tighter">Withdraw</span>
-    </a>
-
-    <a href="products.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-        <span class="text-[9px] font-black uppercase tracking-tighter">Invest</span>
-    </a>
-
-    <a href="account.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-        <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
-    </a>
-</nav>
-
-<style>
-    /* This makes sure the icon for the page you are currently on is Green */
-    /* To use this, add the class "text-emerald-600" to the button for that specific page, 
-       and "text-slate-400" to the others. */
-    .nav-item { color: #94a3b8; } /* Default Slate-400 */
-    .active-nav { color: #059669; } /* Emerald-600 */
-</style>
+    <style>
+        .nav-item { color: #94a3b8; transition: all 0.2s; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
 </body>
 </html>
