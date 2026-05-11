@@ -60,7 +60,7 @@
 
                 <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
                     <p class="text-[9px] font-bold text-amber-700 leading-relaxed uppercase">
-                        ⚠️ Transfer the money first, then click the button below to send screenshot of the transaction via WhatsApp.
+                        ⚠️ Transfer first, then click below to send the receipt via WhatsApp.
                     </p>
                 </div>
 
@@ -71,7 +71,12 @@
             </div>
         </div>
 
-        <a href="dashboard.html" class="block text-center text-slate-400 text-[10px] font-black uppercase tracking-widest">Cancel Transaction</a>
+        <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+            <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Deposit History</h3>
+            <div id="history-list" class="space-y-4">
+                <p class="text-[10px] text-slate-400 text-center py-4">Loading history...</p>
+            </div>
+        </div>
     </div>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
@@ -106,6 +111,37 @@
             alert("Account Number Copied!");
         }
 
+        async function fetchHistory() {
+            const { data: { user } } = await _supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: history, error } = await _supabase
+                .from('deposits')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            const list = document.getElementById('history-list');
+            if (error || !history.length) {
+                list.innerHTML = `<p class="text-[10px] text-slate-400 text-center py-4 uppercase">No records found</p>`;
+                return;
+            }
+
+            list.innerHTML = history.map(item => `
+                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
+                    <div>
+                        <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
+                        <p class="text-[8px] text-slate-400 uppercase font-bold">${new Date(item.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase ${
+                        item.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                    }">
+                        ${item.status}
+                    </span>
+                </div>
+            `).join('');
+        }
+
         async function requestDeposit() {
             const amount = document.getElementById('deposit_amount').value;
             const sender = document.getElementById('sender_name').value;
@@ -117,7 +153,13 @@
             const phone = user.email.replace('@phone.com', '');
 
             const { error } = await _supabase.from('deposits').insert([
-                { user_id: user.id, amount: amount, phone_number: phone, status: 'pending', reference: `Manual-${sender}` }
+                { 
+                    user_id: user.id, 
+                    amount: Number(amount), // Ensuring this is a number
+                    phone_number: phone, 
+                    status: 'pending', 
+                    reference: `Manual-${sender}` 
+                }
             ]);
 
             if (error) return alert(error.message);
@@ -129,8 +171,12 @@
                             `📱 *User ID:* ${phone}%0A%0A` +
                             `_Attached is my proof of payment._`;
 
+            fetchHistory(); // Refresh the list immediately
             window.location.href = `https://wa.me/237698771429?text=${message}`;
         }
+
+        // Initialize history on load
+        document.addEventListener('DOMContentLoaded', fetchHistory);
     </script>
 </body>
 </html>
