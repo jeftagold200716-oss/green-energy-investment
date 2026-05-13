@@ -385,43 +385,32 @@ function copyReferral() {
 
 async function claimDailyBonus() {
     const userPhone = localStorage.getItem('userPhone');
-    const btn = document.getElementById('claim-btn');
-    const claimText = document.getElementById('claim-text');
-
-    btn.disabled = true;
-    claimText.innerText = "CHECKING...";
-
+    
     // Call the database function
     const { data, error } = await _supabase.rpc('claim_tier_bonus', { 
         user_phone: userPhone 
     });
 
     if (error) {
-        alert("Error: " + error.message);
-        btn.disabled = false;
+        alert("System Error: " + error.message);
         return;
     }
 
     const result = data[0];
 
     if (result.success) {
-        alert(`Bonus Claimed! New Balance: ${result.new_balance} XAF`);
+        // Calculate amount added for the alert
+        const oldBalance = parseFloat(document.getElementById('user-balance').innerText) || 0;
+        const addedAmount = result.new_balance - oldBalance;
+
+        alert(`Success! ${addedAmount} NGN added to your balance.`);
         
-        // INSTANT UPDATE: Update the balance on the Home Page immediately
-        const balanceDisplay = document.getElementById('user-balance'); 
-        if (balanceDisplay) {
-            balanceDisplay.innerText = result.new_balance;
-        }
-        
-        // Start a local visual countdown
-        startCountdown(24 * 60 * 60);
+        // Update home page balance instantly
+        document.getElementById('user-balance').innerText = result.new_balance;
     } else {
-        alert("You have already claimed your bonus for today. Please come back later.");
-        btn.disabled = false;
-        claimText.innerText = "CLAIM DAILY BONUS";
+        alert(result.message); // Will say "Please wait 24 hours..."
     }
 }
-
 function startCountdown(seconds) {
     const btn = document.getElementById('claim-btn');
     btn.classList.add('opacity-50', 'cursor-not-allowed');
