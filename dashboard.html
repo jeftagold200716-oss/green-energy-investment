@@ -336,34 +336,29 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
             }
         }
 
-        // Function to update the balance numbers
-        async function syncUserBalance() {
-            try {
-                const { data: { user } } = await _supabase.auth.getUser();
-                if (!user) return;
+       // Function to get the latest data from Supabase
+async function fetchCurrentBalance() {
+    const phone = localStorage.getItem('userPhone');
+    
+    if (!phone) return; // Exit if user isn't logged in
 
-                const { data: profile, error } = await _supabase
-                    .from('profiles')
-                    .select('balance, wallet_balance')
-                    .eq('id', user.id)
-                    .single();
-
-                if (error) throw error;
-
-                const balanceDisplay = document.getElementById('balance');
-                if (balanceDisplay && profile) {
-                    const finalAmount = profile.balance ?? profile.wallet_balance ?? 0;
-                    balanceDisplay.innerText = '₦' + Number(finalAmount).toLocaleString();
-                }
-            } catch (err) {
-                console.error("Balance Sync Error:", err.message);
-            }
+    const { data, error } = await _supabase
+        .from('profiles')
+        .select('balance, tier')
+        .eq('phone', phone)
+        .single();
+    
+    if (data) {
+        // This line updates the number on your Home Page
+        const balanceElement = document.getElementById('user-balance');
+        if (balanceElement) {
+            balanceElement.innerText = data.balance.toLocaleString(); 
         }
+    }
+}
 
-        // Run these when the page opens
-        window.onload = () => {
-            syncUserBalance();
-        };
+// Ensure it runs as soon as the page opens
+window.onload = fetchCurrentBalance;
     </script>
     <script>
     // This is the function the button is looking for
@@ -388,34 +383,49 @@ function copyReferral() {
     alert("Referral link copied!");
 }
 
-// 2. Handle Daily Bonus Logic
 async function claimDailyBonus() {
-    const lastClaim = localStorage.getItem('lastClaimTime');
-    const now = new Date().getTime();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
+    const userPhone = localStorage.getItem('userPhone');
+    const btn = document.getElementById('claim-btn');
+    const claimText = document.getElementById('claim-text');
 
-    if (lastClaim && now - lastClaim < twentyFourHours) {
-        const timeLeft = twentyFourHours - (now - lastClaim);
-        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        alert(`Please wait ${hours}h ${minutes}m before your next claim.`);
+    btn.disabled = true;
+    claimText.innerText = "CHECKING...";
+
+    // Call the database function
+    const { data, error } = await _supabase.rpc('claim_tier_bonus', { 
+        user_phone: userPhone 
+    });
+
+    if (error) {
+        alert("Error: " + error.message);
+        btn.disabled = false;
         return;
     }
 
-    // Add bonus to Supabase
-    const bonusAmount = 100; // Set your bonus amount here
-    const { data, error } = await _supabase.rpc('increment_balance', { 
-        user_phone: userPhone, 
-        amount: bonusAmount 
-    });
+    const result = data[0];
 
-    if (!error) {
-        localStorage.setItem('lastClaimTime', now);
-        alert(`Successfully claimed ${bonusAmount} bonus!`);
-        location.reload(); // Refresh to show new balance
+    if (result.success) {
+        alert(`Bonus Claimed! New Balance: ${result.new_balance} XAF`);
+        
+        // INSTANT UPDATE: Update the balance on the Home Page immediately
+        const balanceDisplay = document.getElementById('user-balance'); 
+        if (balanceDisplay) {
+            balanceDisplay.innerText = result.new_balance;
+        }
+        
+        // Start a local visual countdown
+        startCountdown(24 * 60 * 60);
     } else {
-        alert("Error claiming bonus. Please try again.");
+        alert("You have already claimed your bonus for today. Please come back later.");
+        btn.disabled = false;
+        claimText.innerText = "CLAIM DAILY BONUS";
     }
+}
+
+function startCountdown(seconds) {
+    const btn = document.getElementById('claim-btn');
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    // You can add a timer label here if you want to show the countdown
 }
 </script>
 </body>
