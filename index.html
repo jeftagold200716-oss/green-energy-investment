@@ -23,17 +23,19 @@
                 <input type="password" id="auth_pass" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500">
             </div>
             
+            <!-- Registration Only Fields -->
             <div id="reg-fields" class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Confirm Password</label>
                     <input type="password" id="auth_confirm" placeholder="••••••••" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border border-slate-100 focus:border-emerald-500">
                 </div>
-                <!-- Referral Code Input -->
-          <div class="mb-4">
-    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-2">Referral Code (Optional)</label>
-    <input type="text" id="referral_code" placeholder="Enter Code" 
-        class="w-full bg-slate-100 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all">
-            </div>
+
+                <div class="mb-4">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-2">Referral Code (Optional)</label>
+                    <input type="text" id="referral_code" placeholder="Enter Code" 
+                        class="w-full bg-slate-100 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all">
+                </div>
+
                 <div class="flex items-center gap-2">
                     <input type="checkbox" id="auth_tnc" class="w-4 h-4 accent-emerald-600">
                     <label for="auth_tnc" class="text-[11px] text-slate-500">I accept the Terms & Conditions</label>
@@ -42,11 +44,69 @@
         
 
             <div class="flex flex-col gap-3 pt-4">
-                <button id="primary-btn" onclick="handleAuth()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl">CREATE ACCOUNT</button>
+                <button id="primary-btn" onclick="handleAuth()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all active:scale-95">CREATE ACCOUNT</button>
                 <button onclick="toggleAuthMode()" id="toggle-btn" class="text-slate-400 text-xs font-bold">Already have an account? Login</button>
             </div>
         </div>
     </div>
-    <script src="auth.js"></script>
+
+    <script>
+        // Supabase Initialization
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+
+        let isLogin = false;
+
+        function toggleAuthMode() {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? 'Welcome Back' : 'Create Account';
+            document.getElementById('primary-btn').innerText = isLogin ? 'LOGIN' : 'CREATE ACCOUNT';
+            document.getElementById('toggle-btn').innerText = isLogin ? "Don't have an account? Register" : 'Already have an account? Login';
+            document.getElementById('reg-fields').classList.toggle('hidden', isLogin);
+        }
+
+        async function handleAuth() {
+            const phone = document.getElementById('auth_phone').value;
+            const pass = document.getElementById('auth_pass').value;
+            const refCode = document.getElementById('referral_code').value;
+
+            if (!phone || !pass) return alert("Please fill all fields");
+
+            if (isLogin) {
+                // LOGIN LOGIC
+                const { data, error } = await _supabase.from('profiles').select('*').eq('phone', phone).eq('password', pass).single();
+                if (data) {
+                    localStorage.setItem('userPhone', phone);
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert("Invalid credentials");
+                }
+            } else {
+                // REGISTER LOGIC (With Referral)
+                const confirmPass = document.getElementById('auth_confirm').value;
+                const tnc = document.getElementById('auth_tnc').checked;
+
+                if (pass !== confirmPass) return alert("Passwords do not match");
+                if (!tnc) return alert("Please accept Terms & Conditions");
+
+                const { data, error } = await _supabase.from('profiles').insert([
+                    { 
+                        phone: phone, 
+                        password: pass, 
+                        referred_by: refCode || null,
+                        balance: 0,
+                        tier: 0 
+                    }
+                ]);
+
+                if (error) {
+                    alert("Error: " + error.message);
+                } else {
+                    alert("Account Created!");
+                    localStorage.setItem('userPhone', phone);
+                    window.location.href = "dashboard.html";
+                }
+            }
+        }
+    </script>
 </body>
 </html>
