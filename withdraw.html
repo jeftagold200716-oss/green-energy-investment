@@ -70,7 +70,7 @@
 
         async function initWithdraw() {
             const { data: { user } } = await _supabase.auth.getUser();
-            if(!user) return window.location.href = "index.html";
+            
 
             // Fetch real balance
             const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
