@@ -74,6 +74,22 @@
                 <p class="text-[10px] text-slate-400 font-medium">Certificate No: GE-NIG-2026-X4</p>
             </div>
         </div>
+        <!-- Daily Bonus & Referral Section -->
+<div class="px-6 mb-6 space-y-4">
+    <!-- Daily Bonus Button -->
+    <button id="claim-btn" onclick="claimDailyBonus()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 transition-all active:scale-95">
+        <span id="claim-text">CLAIM DAILY BONUS</span>
+    </button>
+
+    <!-- Referral Link Card -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <p class="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Your Invitation Link</p>
+        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-200">
+            <input type="text" id="referral-url" readonly class="bg-transparent text-xs font-bold text-slate-600 flex-1 outline-none px-2">
+            <button onclick="copyReferral()" class="bg-emerald-600 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase">Copy</button>
+        </div>
+    </div>
+</div>
 
         <div class="space-y-4">
             <img src="https://i.postimg.cc/44V8WCY2/partnership-jpg.jpg" class="w-full rounded-[2.5rem] shadow-lg border-4 border-white" alt="Official Partnership">
@@ -359,6 +375,48 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
             popup.classList.remove('active');
         }
     }
+        // 1. Handle Referral Link Generation
+const userPhone = localStorage.getItem('userPhone');
+const siteUrl = window.location.origin; // Gets your website URL automatically
+const fullReferralLink = `${siteUrl}/index.html?ref=${userPhone}`;
+document.getElementById('referral-url').value = fullReferralLink;
+
+function copyReferral() {
+    const copyText = document.getElementById('referral-url');
+    copyText.select();
+    navigator.clipboard.writeText(copyText.value);
+    alert("Referral link copied!");
+}
+
+// 2. Handle Daily Bonus Logic
+async function claimDailyBonus() {
+    const lastClaim = localStorage.getItem('lastClaimTime');
+    const now = new Date().getTime();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+    if (lastClaim && now - lastClaim < twentyFourHours) {
+        const timeLeft = twentyFourHours - (now - lastClaim);
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        alert(`Please wait ${hours}h ${minutes}m before your next claim.`);
+        return;
+    }
+
+    // Add bonus to Supabase
+    const bonusAmount = 100; // Set your bonus amount here
+    const { data, error } = await _supabase.rpc('increment_balance', { 
+        user_phone: userPhone, 
+        amount: bonusAmount 
+    });
+
+    if (!error) {
+        localStorage.setItem('lastClaimTime', now);
+        alert(`Successfully claimed ${bonusAmount} bonus!`);
+        location.reload(); // Refresh to show new balance
+    } else {
+        alert("Error claiming bonus. Please try again.");
+    }
+}
 </script>
 </body>
 </html>
