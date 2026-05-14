@@ -77,11 +77,11 @@
 
     // ... rest of your withdrawal code ...
 }
-        async function refreshLiveBalance() {
+   async function syncBalanceDisplay() {
     const phone = localStorage.getItem('userPhone');
     if (!phone) return;
 
-    // Fetch the absolute truth from the database
+    // Fetch the latest balance directly from Supabase
     const { data, error } = await _supabase
         .from('profiles')
         .select('balance')
@@ -89,14 +89,11 @@
         .single();
 
     if (data) {
-        // Find the balance display on the page
-        const balanceDisplay = document.getElementById('user-balance');
-        if (balanceDisplay) {
-            // Update the text to match the database exactly
-            balanceDisplay.innerText = data.balance;
-            
-            // If you are on the withdraw page, update the input logic too
-            window.currentBalance = data.balance; 
+        // This finds the balance card and updates the number
+        const balanceCard = document.getElementById('user-balance');
+        if (balanceCard) {
+            // Using toLocaleString() makes it look professional (e.g., 1,000 instead of 1000)
+            balanceCard.innerText = data.balance.toLocaleString();
         }
     }
 }
