@@ -118,11 +118,7 @@
         const senderInput = document.getElementById('sender_name');
         const btn = event.currentTarget; // Targets the button clicked
 
-        if (!phone) {
-            alert("Session expired. Please login again.");
-            window.location.href = 'index.html';
-            return;
-        }
+    
 
         if (!amountInput.value || !senderInput.value) {
             alert("Please fill in both the amount and your bank name.");
