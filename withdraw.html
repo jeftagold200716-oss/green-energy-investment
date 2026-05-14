@@ -23,7 +23,7 @@
             <div class="w-9"></div> </div>
         
         <div class="max-w-lg mx-auto mt-8 text-center">
-            <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Available for Payout</p>
+            <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Total Assets</p>
             <h2 id="display_balance" class="text-4xl font-black mt-1">₦0.00</h2>
         </div>
     </div>
@@ -70,39 +70,34 @@
     let currentBalance = 0;
 
     async function syncBalanceDisplay() {
-        const phone = localStorage.getItem('userPhone');
-        if (!phone) {
-            console.error("No phone found in localStorage");
-            return;
-        }
+    // 1. Get the logged-in user's phone
+    const phone = localStorage.getItem('userPhone');
+    if (!phone) return;
 
-        // Fetch the absolute latest balance from Supabase
-        const { data, error } = await _supabase
-            .from('profiles')
-            .select('id, balance')
-            .eq('phone', phone)
-            .single();
+    // 2. Fetch fresh data from the 'profiles' table
+    const { data, error } = await _supabase
+        .from('profiles')
+        .select('balance')
+        .eq('phone', phone)
+        .single();
 
-        if (error) {
-            console.error("Error fetching balance:", error.message);
-            return;
-        }
-
-        if (data) {
-            // Update the global balance variable
-            currentBalance = parseFloat(data.balance);
+    if (data) {
+        // 3. Find the balance element on your page
+        const balanceCard = document.getElementById('user-balance');
+        if (balanceCard) {
+            // 4. Format and display the new balance
+            balanceCard.innerText = Number(data.balance).toLocaleString();
             
-            // Save user ID for the withdrawal record
-            window.currentUserId = data.id;
-
-            // Update the text on the screen
-            const balanceCard = document.getElementById('user-balance');
-            if (balanceCard) {
-                balanceCard.innerText = currentBalance.toLocaleString();
+            // 5. If on the Withdraw page, update your check variable
+            if (typeof currentBalance !== 'undefined') {
+                currentBalance = data.balance;
             }
         }
     }
+}
 
+// Ensure it runs as soon as the page is ready
+window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
     async function submitWithdrawal() {
         const amountInput = document.getElementById('w_amount');
         const amount = parseFloat(amountInput.value);
