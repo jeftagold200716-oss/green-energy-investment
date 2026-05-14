@@ -130,49 +130,37 @@ const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.c
 
        // --- DEPOSIT HANDLING ---
 async function loadDeposits() {
+    // We select everything (*) so we get the new name columns
     const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
     if (error) return console.error(error);
     
     const list = document.getElementById('deposit-list');
     list.innerHTML = data.map(d => `
         <div id="dep-${d.id}" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
-            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">${d.reference || 'Manual'}</p>
+            <!-- Display the User's Green Energy Profile Name -->
+            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">
+                ${d.user_name || 'No Account Name'}
+            </p>
+            
             <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
-            <p class="text-[10px] text-slate-400 font-bold mb-4">Phone: ${d.phone_number || 'N/A'}</p>
+            
+            <div class="space-y-1 mt-2 mb-4">
+                <!-- Display the Name they entered from their Bank App -->
+                <p class="text-[10px] text-slate-500 font-bold">
+                    <span class="text-slate-400">SENDER:</span> ${d.sender_name || 'Not Provided'}
+                </p>
+                <!-- Display the Phone Number -->
+                <p class="text-[10px] text-slate-500 font-bold">
+                    <span class="text-slate-400">PHONE:</span> ${d.phone || 'N/A'}
+                </p>
+            </div>
+
             <div class="flex gap-2">
                 <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
                 <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
             </div>
         </div>
     `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending deposits</p>';
-}
-
-async function handleDeposit(id, uid, amt, status) {
-    const element = document.getElementById(`dep-${id}`);
-    if (!element) return;
-    
-    try {
-        element.style.opacity = "0.5";
-
-        // We ONLY update the status. 
-        // The SQL Trigger we just ran handles the money automatically!
-        const { error } = await _supabase
-            .from('deposits')
-            .update({ status: status })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        // Success UI
-        element.innerHTML = `<div class="text-center py-4 text-emerald-600 font-black tracking-widest text-[10px]">✅ DATABASE UPDATED</div>`;
-        setTimeout(() => { element.remove(); }, 1000);
-        
-        loadRevenue();
-
-    } catch (err) {
-        element.style.opacity = "1";
-        alert("SQL Error: " + err.message);
-    }
 }
         async function handleWithdraw(id, uid, amt, status) {
             try {
