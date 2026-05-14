@@ -53,7 +53,7 @@
         
         <div class="solar-gradient rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-200 relative overflow-hidden">
             <div class="relative z-10">
-                <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest opacity-80">Total Assets</p>
+                <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest opacity-80">Available Balance</p>
                 <h2 id="balance" class="text-4xl font-black mt-2">₦0.00</h2>
                 <div class="flex gap-4 mt-8">
                     <a href="deposit.html" class="bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl flex items-center gap-2 border border-white/30 active:scale-95 transition-all">
@@ -359,28 +359,35 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
 window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
 
        // Function to get the latest data from Supabase
-async function fetchCurrentBalance() {
+async function syncBalanceDisplay() {
+    // 1. Get the logged-in user's phone
     const phone = localStorage.getItem('userPhone');
-    
-    if (!phone) return; // Exit if user isn't logged in
+    if (!phone) return;
 
+    // 2. Fetch fresh data from the 'profiles' table
     const { data, error } = await _supabase
         .from('profiles')
-        .select('balance, tier')
+        .select('balance')
         .eq('phone', phone)
         .single();
-    
+
     if (data) {
-        // This line updates the number on your Home Page
-        const balanceElement = document.getElementById('user-balance');
-        if (balanceElement) {
-            balanceElement.innerText = data.balance.toLocaleString(); 
+        // 3. Find the balance element on your page
+        const balanceCard = document.getElementById('user-balance');
+        if (balanceCard) {
+            // 4. Format and display the new balance
+            balanceCard.innerText = Number(data.balance).toLocaleString();
+            
+            // 5. If on the Withdraw page, update your check variable
+            if (typeof currentBalance !== 'undefined') {
+                currentBalance = data.balance;
+            }
         }
     }
 }
 
-// Ensure it runs as soon as the page opens
-window.onload = fetchCurrentBalance;
+// Ensure it runs as soon as the page is ready
+window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
     </script>
     <script>
     // This is the function the button is looking for
