@@ -111,62 +111,68 @@
         alert("Account Number Copied!");
     }
 
-    // Fixed function name to match your button's onclick="submitDepositRequest()"
   async function handleDeposit(event) {
     event.preventDefault();
     
+    // Get phone from storage and amount from input
     const phone = localStorage.getItem('userPhone');
-    const amount = document.getElementById('amount').value;
-    const transactionId = document.getElementById('transaction-id').value; // if you use one
+    const amountInput = document.getElementById('amount'); // Ensure your input has id="amount"
     const btn = document.getElementById('submit-btn');
 
     if (!phone) {
-        alert("Please login again");
+        alert("Session expired. Please login again.");
+        window.location.href = 'login.html';
         return;
     }
 
-    btn.innerText = "PROCESSING...";
+    const amount = amountInput.value;
+    btn.innerText = "SAVING REQUEST...";
     btn.disabled = true;
 
-    // 1. Fetch the User's Name from the 'profiles' table
-    const { data: profile, error: profileError } = await _supabase
-        .from('profiles')
-        .select('full_name') // Ensure this matches your column name (e.g., 'name' or 'full_name')
-        .eq('phone', phone)
-        .single();
+    try {
+        // STEP 1: Get the user's name from the profiles table
+        const { data: profile, error: profileError } = await _supabase
+            .from('profiles')
+            .select('full_name') 
+            .eq('phone', phone)
+            .single();
 
-    const userName = profile ? profile.full_name : "Unknown User";
+        if (profileError) throw profileError;
+        
+        const userName = profile ? profile.full_name : "User";
 
-    // 2. Insert into 'deposits' table with Name and Phone
-    const { error: depositError } = await _supabase
-        .from('deposits')
-        .insert([{
-            phone: phone,
-            user_name: userName, // Added this
-            amount: parseFloat(amount),
-            status: 'pending',
-            created_at: new Date()
-        }]);
+        // STEP 2: Save to 'deposits' table so it shows on Admin Panel
+        const { error: depositError } = await _supabase
+            .from('deposits')
+            .insert([{
+                phone: phone,
+                user_name: userName, // This makes it show on Admin
+                amount: parseFloat(amount),
+                status: 'pending'
+            }]);
 
-    if (depositError) {
-        alert("Deposit log failed: " + depositError.message);
-        btn.innerText = "RETRY";
+        if (depositError) throw depositError;
+
+        // STEP 3: Construct the WhatsApp message
+        const adminWhatsApp = "237698771429"; 
+        const message = `*NEW DEPOSIT REQUEST*%0A%0A` +
+                        `*Name:* ${userName}%0A` +
+                        `*Phone:* ${phone}%0A` +
+                        `*Amount:* ₦${Number(amount).toLocaleString()}%0A%0A` +
+                        `I have made the transfer. Sending screenshot now!`;
+
+        const whatsappUrl = `https://wa.me/${adminWhatsApp}?text=${message}`;
+
+        // STEP 4: Redirect to WhatsApp
+        btn.innerText = "OPENING WHATSAPP...";
+        window.location.href = whatsappUrl;
+
+    } catch (err) {
+        console.error("Deposit Error:", err);
+        alert("Error: " + err.message);
+        btn.innerText = "CONFIRM DEPOSIT";
         btn.disabled = false;
-        return;
     }
-
-    // 3. Construct the WhatsApp Message with Name and Phone
-    const adminWhatsApp = "237698771429"; 
-    const message = `Hello Admin, I have made a deposit.%0A%0A` +
-                    `*Name:* ${userName}%0A` +
-                    `*Phone:* ${phone}%0A` +
-                    `*Amount:* ₦${amount}%0A%0A` +
-                    `I am sending my screenshot now. Please approve my request.`;
-
-    const whatsappUrl = `https://wa.me/${adminWhatsApp}?text=${message}`;
-
-    // 4. Redirect to WhatsApp
-    window.location.href = whatsappUrl;
 }
     // Function to load history using phone number from localStorage
     async function fetchHistory() {
