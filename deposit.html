@@ -113,7 +113,7 @@
 
     async function submitDepositRequest() {
         // 1. Get Values from Inputs
-        const phone = localStorage.getItem('userPhone');
+        const phone = localStorage.getItem('user_phone');
         const amountInput = document.getElementById('deposit_amount');
         const senderInput = document.getElementById('sender_name');
         const btn = event.currentTarget; // Targets the button clicked
@@ -140,7 +140,7 @@
             const { data: profile, error: profileError } = await _supabase
                 .from('profiles')
                 .select('full_name, id') 
-                .eq('phone', phone)
+                .eq('user_phone', phone)
                 .single();
 
             if (profileError) throw profileError;
@@ -153,7 +153,7 @@
                 .from('deposits')
                 .insert([{
                     user_id: profile.id,
-                    phone: phone,
+                    phone: user_phone,
                     user_name: accountName,
                     sender_name: senderBankName,
                     amount: parseFloat(amount),
