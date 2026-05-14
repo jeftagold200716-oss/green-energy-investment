@@ -64,55 +64,54 @@
     </div>
 
    <script>
-    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+   const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-    // Variable to hold balance for checking against withdrawal amount
     let currentBalance = 0;
+    let currentUserId = null;
 
     async function syncBalanceDisplay() {
-    // 1. Get the logged-in user's phone
-    const phone = localStorage.getItem('userPhone');
-    if (!phone) return;
+        const phone = localStorage.getItem('userPhone');
+        if (!phone) {
+            console.error("No userPhone found in localStorage");
+            return;
+        }
 
-    // 2. Fetch fresh data from the 'profiles' table
-    const { data, error } = await _supabase
-        .from('profiles')
-        .select('balance')
-        .eq('phone', phone)
-        .single();
+        // Fetch fresh data from the 'profiles' table
+        const { data, error } = await _supabase
+            .from('profiles')
+            .select('id, balance')
+            .eq('phone', phone)
+            .single();
 
-    if (data) {
-        // 3. Find the balance element on your page
-        const balanceCard = document.getElementById('user-balance');
-        if (balanceCard) {
-            // 4. Format and display the new balance
-            balanceCard.innerText = Number(data.balance).toLocaleString();
-            
-            // 5. If on the Withdraw page, update your check variable
-            if (typeof currentBalance !== 'undefined') {
-                currentBalance = data.balance;
+        if (error) {
+            console.error("Database error:", error.message);
+            return;
+        }
+
+        if (data) {
+            currentBalance = Number(data.balance || 0);
+            currentUserId = data.id;
+
+            // FIX: Match the ID in your HTML (display_balance)
+            const balanceElement = document.getElementById('display_balance');
+            if (balanceElement) {
+                balanceElement.innerText = `₦${currentBalance.toLocaleString()}`;
             }
         }
     }
-}
 
-// Ensure it runs as soon as the page is ready
-window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
     async function submitWithdrawal() {
-        const amountInput = document.getElementById('w_amount');
-        const amount = parseFloat(amountInput.value);
+        const amount = parseFloat(document.getElementById('w_amount').value);
         const bank = document.getElementById('w_bank').value;
         const num = document.getElementById('w_acc_num').value;
         const name = document.getElementById('w_acc_name').value;
         const btnText = document.getElementById('btn_text');
-        const btn = btnText.parentElement; // The actual button element
 
         // 1. Validation Checks
         if (isNaN(amount) || amount < 5000) {
             return alert("Minimum withdrawal is ₦5,000");
         }
         
-        // Use the live balance we fetched on load
         if (amount > currentBalance) {
             return alert(`Insufficient Balance! Your current balance is ₦${currentBalance.toLocaleString()}`);
         }
@@ -121,14 +120,18 @@ window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
             return alert("Please fill all bank details");
         }
 
+        if (!currentUserId) {
+            return alert("User session error. Please refresh and try again.");
+        }
+
         // 2. Disable UI
         btnText.innerText = "PROCESSING...";
-        btn.disabled = true;
+        btnText.disabled = true;
 
         try {
             // 3. Insert Withdrawal Request
             const { error } = await _supabase.from('withdrawals').insert([{
-                user_id: window.currentUserId,
+                user_id: currentUserId,
                 amount: amount,
                 bank_name: bank,
                 account_number: num,
@@ -138,19 +141,18 @@ window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
 
             if (error) throw error;
 
-            // 4. Success Actions
             alert("Withdrawal Request Submitted Successfully!");
             window.location.href = "account.html"; 
 
         } catch (err) {
             alert("Error: " + err.message);
             btnText.innerText = "REQUEST PAYOUT";
-            btn.disabled = false;
+            btnText.disabled = false;
         }
     }
 
-    // Run this the moment the page loads
-    window.addEventListener('load', syncBalanceDisplay);
+    // Run this the moment the page finishes loading
+    window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
 </script>
     <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
     
