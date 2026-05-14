@@ -112,66 +112,62 @@
     }
 
     // Fixed function name to match your button's onclick="submitDepositRequest()"
-    async function submitDepositRequest() {
-        console.log("Deposit process started...");
-        
-        // Corrected IDs to match your HTML inputs
-        const amountInput = document.getElementById('deposit_amount');
-        const nameInput = document.getElementById('sender_name');
-        
-        const amount = amountInput ? amountInput.value : null;
-        const senderName = nameInput ? nameInput.value : "Not Provided";
-        const phone = localStorage.getItem('userPhone');
+  async function handleDeposit(event) {
+    event.preventDefault();
+    
+    const phone = localStorage.getItem('userPhone');
+    const amount = document.getElementById('amount').value;
+    const transactionId = document.getElementById('transaction-id').value; // if you use one
+    const btn = document.getElementById('submit-btn');
 
-        if (!amount || !phone) {
-            alert("Please enter an amount and ensure you are logged in.");
-            return;
-        }
-
-        try {
-            // 1. Get the User ID from profiles table
-            const { data: user, error: userError } = await _supabase
-                .from('profiles')
-                .select('id')
-                .eq('phone', phone)
-                .single();
-
-            if (userError || !user) throw new Error("User profile not found. Please log in again.");
-
-            // 2. Insert into Deposits table for your Admin Panel
-            const { error: depError } = await _supabase
-                .from('deposits')
-                .insert([{
-                    user_id: user.id,
-                    amount: parseFloat(amount),
-                    method: 'OPay Transfer', // Defaulting to your Opay info
-                    status: 'pending',
-                    created_at: new Date()
-                }]);
-
-            if (depError) throw depError;
-
-            // 3. WhatsApp Redirect logic
-            const adminWhatsApp = "237698771429"; 
-            const message = window.encodeURIComponent(
-                `*NEW DEPOSIT REQUEST*\n` +
-                `--------------------------\n` +
-                `User ID: ${user.id}\n` +
-                `Phone: ${phone}\n` +
-                `Sender Name: ${senderName}\n` +
-                `Amount: ${amount} NGN\n` +
-                `--------------------------\n` +
-                `_I am sending the screenshot proof now._`
-            );
-
-            window.location.href = `https://wa.me/${adminWhatsApp}?text=${message}`;
-
-        } catch (err) {
-            console.error("Deposit Error:", err);
-            alert("Error: " + err.message);
-        }
+    if (!phone) {
+        alert("Please login again");
+        return;
     }
 
+    btn.innerText = "PROCESSING...";
+    btn.disabled = true;
+
+    // 1. Fetch the User's Name from the 'profiles' table
+    const { data: profile, error: profileError } = await _supabase
+        .from('profiles')
+        .select('full_name') // Ensure this matches your column name (e.g., 'name' or 'full_name')
+        .eq('phone', phone)
+        .single();
+
+    const userName = profile ? profile.full_name : "Unknown User";
+
+    // 2. Insert into 'deposits' table with Name and Phone
+    const { error: depositError } = await _supabase
+        .from('deposits')
+        .insert([{
+            phone: phone,
+            user_name: userName, // Added this
+            amount: parseFloat(amount),
+            status: 'pending',
+            created_at: new Date()
+        }]);
+
+    if (depositError) {
+        alert("Deposit log failed: " + depositError.message);
+        btn.innerText = "RETRY";
+        btn.disabled = false;
+        return;
+    }
+
+    // 3. Construct the WhatsApp Message with Name and Phone
+    const adminWhatsApp = "237698771429"; 
+    const message = `Hello Admin, I have made a deposit.%0A%0A` +
+                    `*Name:* ${userName}%0A` +
+                    `*Phone:* ${phone}%0A` +
+                    `*Amount:* ₦${amount}%0A%0A` +
+                    `I am sending my screenshot now. Please approve my request.`;
+
+    const whatsappUrl = `https://wa.me/${adminWhatsApp}?text=${message}`;
+
+    // 4. Redirect to WhatsApp
+    window.location.href = whatsappUrl;
+}
     // Function to load history using phone number from localStorage
     async function fetchHistory() {
         const phone = localStorage.getItem('userPhone');
