@@ -182,6 +182,27 @@
             btn.disabled = false;
         }
     }
+       async function fetchAdminDeposits() {
+    const { data: deposits, error } = await _supabase
+        .from('deposits')
+        .select(`
+            id,
+            created_at,
+            amount,
+            status,
+            phone,
+            user_name,
+            sender_name
+        `) // Explicitly list the new columns here
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching deposits:", error);
+        return;
+    }
+    
+    renderDepositTable(deposits);
+}
     async function fetchHistory() {
         const phone = localStorage.getItem('userPhone');
         if (!phone) return;
