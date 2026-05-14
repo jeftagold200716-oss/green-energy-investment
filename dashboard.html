@@ -335,6 +335,29 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
                 popup.style.display = 'none'; // Forces it to vanish
             }
         }
+        async function syncBalanceDisplay() {
+    const phone = localStorage.getItem('userPhone');
+    if (!phone) return;
+
+    // Fetch the latest balance directly from Supabase
+    const { data, error } = await _supabase
+        .from('profiles')
+        .select('balance')
+        .eq('phone', phone)
+        .single();
+
+    if (data) {
+        // This finds the balance card and updates the number
+        const balanceCard = document.getElementById('user-balance');
+        if (balanceCard) {
+            // Using toLocaleString() makes it look professional (e.g., 1,000 instead of 1000)
+            balanceCard.innerText = data.balance.toLocaleString();
+        }
+    }
+}
+
+// Run this every time the page finishes loading
+window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
 
        // Function to get the latest data from Supabase
 async function fetchCurrentBalance() {
