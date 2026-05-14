@@ -142,41 +142,55 @@
             `).join('');
         }
 
-        async function requestDeposit() {
-            const amount = document.getElementById('deposit_amount').value;
-            const sender = document.getElementById('sender_name').value;
-            
-            if (amount < 1000) return alert("Minimum deposit is ₦1,000");
-            if (!sender) return alert("Please enter the sender's name");
+       async function submitDepositRequest() {
+    const amount = document.getElementById('dep_amount').value;
+    const method = document.getElementById('dep_method').value;
+    const phone = localStorage.getItem('userPhone');
+    const depositDate = new Date().toLocaleString(); 
 
-            const { data: { user } } = await _supabase.auth.getUser();
-            const phone = user.email.replace('@phone.com', '');
+    if (!amount || amount < 1000) {
+        alert("Please enter a valid amount (Min 1000 NGN)");
+        return;
+    }
 
-            const { error } = await _supabase.from('deposits').insert([
-                { 
-                    user_id: user.id, 
-                    amount: Number(amount), // Ensuring this is a number
-                    phone_number: phone, 
-                    status: 'pending', 
-                    reference: `Manual-${sender}` 
-                }
-            ]);
+    try {
+        const { data: user, error: userError } = await _supabase
+            .from('profiles')
+            .select('id')
+            .eq('phone', phone)
+            .single();
 
-            if (error) return alert(error.message);
+        if (userError || !user) throw new Error("User session not found.");
 
-            // WhatsApp formatting
-            const message = `⚡ *NEW DEPOSIT LOGGED*%0A%0A` +
-                            `👤 *Sender:* ${sender}%0A` +
-                            `💰 *Amount:* ₦${Number(amount).toLocaleString()}%0A` +
-                            `📱 *User ID:* ${phone}%0A%0A` +
-                            `_Attached is my proof of payment._`;
+        const { error: depError } = await _supabase
+            .from('deposits')
+            .insert([{
+                user_id: user.id,
+                amount: parseFloat(amount),
+                method: method,
+                status: 'pending', 
+                created_at: new Date()
+            }]);
 
-            fetchHistory(); // Refresh the list immediately
-            window.location.href = `https://wa.me/237698771429?text=${message}`;
-        }
+        if (depError) throw depError;
 
-        // Initialize history on load
-        document.addEventListener('DOMContentLoaded', fetchHistory);
+        // REPLACE THIS NUMBER WITH YOUR ACTUAL WHATSAPP NUMBER
+        const adminWhatsApp = "237698771429"; 
+        const message = `*NEW DEPOSIT REQUEST*%0A` +
+                        `--------------------------%0A` +
+                        `User ID: ${user.id}%0A` +
+                        `Phone: ${phone}%0A` +
+                        `Amount: ${amount} NGN%0A` +
+                        `Date: ${depositDate}%0A` +
+                        `--------------------------%0A` +
+                        `_Please add screenshot as proof below._`;
+
+        window.location.href = `https://wa.me/${adminWhatsApp}?text=${message}`;
+
+    } catch (err) {
+        alert("Request failed: " + err.message);
+    }
+}
     </script>
 </body>
 </html>
