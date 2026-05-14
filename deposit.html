@@ -136,7 +136,7 @@
             const { data: profile, error: profileError } = await _supabase
                 .from('profiles')
                 .select('full_name, id') 
-                .eq('user_phone', phone)
+                .eq('phone', phone)
                 .single();
 
             if (profileError) throw profileError;
