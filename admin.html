@@ -151,7 +151,8 @@ async function loadDeposits() {
                 </p>
                 <!-- Display the Phone Number -->
                 <p class="text-[10px] text-slate-500 font-bold">
-                    <span class="text-slate-400">PHONE:</span> ${d.phone || 'N/A'}
+                    // REPLACE THIS LINE in your loadDeposits map function:
+<span class="text-slate-400">PHONE:</span> ${d.phone || d.phone_number || 'N/A'}
                 </p>
             </div>
 
