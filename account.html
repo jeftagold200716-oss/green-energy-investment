@@ -111,7 +111,30 @@
     // Initialize Supabase
     const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-    // TIER DATA - Hardcoded so it always works
+async function syncBalanceDisplay() {
+    const phone = localStorage.getItem('userPhone');
+    if (!phone) return;
+
+    // Fetch the latest balance directly from Supabase
+    const { data, error } = await _supabase
+        .from('profiles')
+        .select('balance')
+        .eq('phone', phone)
+        .single();
+
+    if (data) {
+        // This finds the balance card and updates the number
+        const balanceCard = document.getElementById('user-balance');
+        if (balanceCard) {
+            // Using toLocaleString() makes it look professional (e.g., 1,000 instead of 1000)
+            balanceCard.innerText = data.balance.toLocaleString();
+        }
+    }
+}
+
+// Run this every time the page finishes loading
+window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
+    
     const tierData = [
         { level: 1, name: "TIER 1", daily: "150", products: "Bronze Products", maxW: "5k", times: "2x Daily", price: "Free" },
         { level: 2, name: "TIER 2", daily: "250", products: "Bronze & Silver", maxW: "15k", times: "4x Daily", price: "3,000" },
