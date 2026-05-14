@@ -66,19 +66,17 @@
     <script>
         const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-        let currentBalance = 0;
+       async function handleWithdraw() {
+    const amount = parseFloat(document.getElementById('withdraw_amount').value);
+    
+    // Use the live balance we fetched in Step 1
+    if (amount > window.currentBalance) {
+        alert("Insufficient Balance! Your current balance is: ₦" + window.currentBalance);
+        return;
+    }
 
-        async function initWithdraw() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            
-
-            // Fetch real balance
-            const { data: profile } = await _supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
-            if(profile) {
-                currentBalance = profile.wallet_balance;
-                document.getElementById('display_balance').innerText = `₦${currentBalance.toLocaleString()}`;
-            }
-        }
+    // ... rest of your withdrawal code ...
+}
         async function refreshLiveBalance() {
     const phone = localStorage.getItem('userPhone');
     if (!phone) return;
