@@ -168,6 +168,7 @@ window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
         }
     }
 
+
     // 2. Open Tier Modal (Now works even if database is slow)
     function openTierModal() {
         const modal = document.getElementById('tier_modal');
@@ -200,6 +201,21 @@ window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
     function closeTierModal() {
         document.getElementById('tier_modal').classList.add('hidden');
     }
+    async function loadDepositHistory() {
+    const phone = localStorage.getItem('userPhone');
+    const { data: user } = await _supabase.from('profiles').select('id').eq('phone', phone).single();
+
+    const { data: history, error } = await _supabase
+        .from('deposits')
+        .select('amount, status, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+    if (history) {
+        // Use this 'history' variable to fill your HTML table
+        console.log("Deposit History Loaded:", history);
+    }
+}
 
     // 3. Tab Switching Logic
     async function showSection(type) {
