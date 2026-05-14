@@ -63,62 +63,77 @@
         </div>
     </div>
 
-    <script>
-        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+   <script>
+    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-       async function handleWithdraw() {
-    const amount = parseFloat(document.getElementById('withdraw_amount').value);
-    
-    // Use the live balance we fetched in Step 1
-    if (amount > window.currentBalance) {
-        alert("Insufficient Balance! Your current balance is: ₦" + window.currentBalance);
-        return;
-    }
+    // Variable to hold balance for checking against withdrawal amount
+    let currentBalance = 0;
 
-    // ... rest of your withdrawal code ...
-}
-   async function syncBalanceDisplay() {
-    const phone = localStorage.getItem('userPhone');
-    if (!phone) return;
+    async function syncBalanceDisplay() {
+        const phone = localStorage.getItem('userPhone');
+        if (!phone) {
+            console.error("No phone found in localStorage");
+            return;
+        }
 
-    // Fetch the latest balance directly from Supabase
-    const { data, error } = await _supabase
-        .from('profiles')
-        .select('balance')
-        .eq('phone', phone)
-        .single();
+        // Fetch the absolute latest balance from Supabase
+        const { data, error } = await _supabase
+            .from('profiles')
+            .select('id, balance')
+            .eq('phone', phone)
+            .single();
 
-    if (data) {
-        // This finds the balance card and updates the number
-        const balanceCard = document.getElementById('user-balance');
-        if (balanceCard) {
-            // Using toLocaleString() makes it look professional (e.g., 1,000 instead of 1000)
-            balanceCard.innerText = data.balance.toLocaleString();
+        if (error) {
+            console.error("Error fetching balance:", error.message);
+            return;
+        }
+
+        if (data) {
+            // Update the global balance variable
+            currentBalance = parseFloat(data.balance);
+            
+            // Save user ID for the withdrawal record
+            window.currentUserId = data.id;
+
+            // Update the text on the screen
+            const balanceCard = document.getElementById('user-balance');
+            if (balanceCard) {
+                balanceCard.innerText = currentBalance.toLocaleString();
+            }
         }
     }
-}
 
-// Run this automatically when the page opens
-window.addEventListener('load', refreshLiveBalance);
+    async function submitWithdrawal() {
+        const amountInput = document.getElementById('w_amount');
+        const amount = parseFloat(amountInput.value);
+        const bank = document.getElementById('w_bank').value;
+        const num = document.getElementById('w_acc_num').value;
+        const name = document.getElementById('w_acc_name').value;
+        const btnText = document.getElementById('btn_text');
+        const btn = btnText.parentElement; // The actual button element
 
-        async function submitWithdrawal() {
-            const amount = parseFloat(document.getElementById('w_amount').value);
-            const bank = document.getElementById('w_bank').value;
-            const num = document.getElementById('w_acc_num').value;
-            const name = document.getElementById('w_acc_name').value;
-            const btn = document.getElementById('btn_text');
+        // 1. Validation Checks
+        if (isNaN(amount) || amount < 5000) {
+            return alert("Minimum withdrawal is ₦5,000");
+        }
+        
+        // Use the live balance we fetched on load
+        if (amount > currentBalance) {
+            return alert(`Insufficient Balance! Your current balance is ₦${currentBalance.toLocaleString()}`);
+        }
+        
+        if (!bank || !num || !name) {
+            return alert("Please fill all bank details");
+        }
 
-            if (amount < 5000) return alert("Minimum withdrawal is ₦5,000");
-            if (amount > currentBalance) return alert("Insufficient Balance!");
-            if (!bank || !num || !name) return alert("Please fill all bank details");
+        // 2. Disable UI
+        btnText.innerText = "PROCESSING...";
+        btn.disabled = true;
 
-            btn.innerText = "PROCESSING...";
-            btn.disabled = true;
-
-            const { data: { user } } = await _supabase.auth.getUser();
-
+        try {
+            // 3. Insert Withdrawal Request
             const { error } = await _supabase.from('withdrawals').insert([{
-                user_id: user.id,
+                user_id: window.currentUserId,
                 amount: amount,
                 bank_name: bank,
                 account_number: num,
@@ -126,18 +141,22 @@ window.addEventListener('load', refreshLiveBalance);
                 status: 'pending'
             }]);
 
-            if (error) {
-                alert("Error: " + error.message);
-                btn.innerText = "REQUEST PAYOUT";
-                btn.disabled = false;
-            } else {
-                alert("Withdrawal Request Submitted Successfully!");
-                window.location.href = "account.html"; // Send them to history
-            }
-        }
+            if (error) throw error;
 
-        initWithdraw();
-    </script>
+            // 4. Success Actions
+            alert("Withdrawal Request Submitted Successfully!");
+            window.location.href = "account.html"; 
+
+        } catch (err) {
+            alert("Error: " + err.message);
+            btnText.innerText = "REQUEST PAYOUT";
+            btn.disabled = false;
+        }
+    }
+
+    // Run this the moment the page loads
+    window.addEventListener('load', syncBalanceDisplay);
+</script>
     <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
     
     <a href="dashboard.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
