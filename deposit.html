@@ -128,19 +128,21 @@
         const amount = amountInput.value;
         const senderBankName = senderInput.value;
 
-        btn.innerText = "SAVING REQUEST...";
+        btn.innerText = "SENDING REQUEST...";
         btn.disabled = true;
 
         try {
             // STEP 1: Get the Green Energy account name from profiles
-            const { data: profile, error: profileError } = await _supabase
-                .from('profiles')
-                .select('full_name, id') 
-                .eq('phone', phone)
-                .single();
+           const { data: profiles, error: profileError } = await _supabase
+    .from('profiles')
+    .select('full_name, id') 
+    .eq('phone', phone); // Removed .single()
 
-            if (profileError) throw profileError;
-            const accountName = profile ? profile.full_name : "Unknown User";
+if (profileError) throw profileError;
+
+// Manually pick the first profile found
+const profile = profiles && profiles.length > 0 ? profiles[0] : null;
+const accountName = profile ? profile.full_name : "User";
 
             // STEP 2: Save to 'deposits' table
             // Note: user_name = The name on their Green Energy Account
