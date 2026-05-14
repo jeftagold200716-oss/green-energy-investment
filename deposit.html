@@ -103,7 +103,7 @@
     </nav>
 
    <script>
-    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+   const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
     function copyAccount() {
         const num = document.getElementById('accNum').innerText;
@@ -111,69 +111,115 @@
         alert("Account Number Copied!");
     }
 
-  async function handleDeposit(event) {
-    event.preventDefault();
-    
-    // Get phone from storage and amount from input
-    const phone = localStorage.getItem('userPhone');
-    const amountInput = document.getElementById('amount'); // Ensure your input has id="amount"
-    const btn = document.getElementById('submit-btn');
+    async function submitDepositRequest() {
+        // 1. Get Values from Inputs
+        const phone = localStorage.getItem('userPhone');
+        const amountInput = document.getElementById('deposit_amount');
+        const senderInput = document.getElementById('sender_name');
+        const btn = event.currentTarget; // Targets the button clicked
 
-    if (!phone) {
-        alert("Session expired. Please login again.");
-        window.location.href = 'login.html';
-        return;
+        if (!phone) {
+            alert("Session expired. Please login again.");
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (!amountInput.value || !senderInput.value) {
+            alert("Please fill in both the amount and your bank name.");
+            return;
+        }
+
+        const amount = amountInput.value;
+        const senderBankName = senderInput.value;
+
+        btn.innerText = "SAVING REQUEST...";
+        btn.disabled = true;
+
+        try {
+            // STEP 1: Get the Green Energy account name from profiles
+            const { data: profile, error: profileError } = await _supabase
+                .from('profiles')
+                .select('full_name, id') 
+                .eq('phone', phone)
+                .single();
+
+            if (profileError) throw profileError;
+            const accountName = profile ? profile.full_name : "Unknown User";
+
+            // STEP 2: Save to 'deposits' table
+            // Note: user_name = The name on their Green Energy Account
+            // sender_name = The name they typed in the bank app field
+            const { error: depositError } = await _supabase
+                .from('deposits')
+                .insert([{
+                    user_id: profile.id,
+                    phone: phone,
+                    user_name: accountName,
+                    sender_name: senderBankName,
+                    amount: parseFloat(amount),
+                    status: 'pending'
+                }]);
+
+            if (depositError) throw depositError;
+
+            // STEP 3: Construct the WhatsApp message
+            const adminWhatsApp = "237698771429"; 
+            const message = `*NEW DEPOSIT REQUEST*%0A%0A` +
+                            `*Account Name:* ${accountName}%0A` +
+                            `*Bank Sender Name:* ${senderBankName}%0A` +
+                            `*Phone:* ${phone}%0A` +
+                            `*Amount:* ₦${Number(amount).toLocaleString()}%0A%0A` +
+                            `I have made the transfer. Sending screenshot now!`;
+
+            const whatsappUrl = `https://wa.me/${adminWhatsApp}?text=${message}`;
+
+            // STEP 4: Redirect to WhatsApp
+            btn.innerText = "OPENING WHATSAPP...";
+            window.location.href = whatsappUrl;
+
+        } catch (err) {
+            console.error("Deposit Error:", err);
+            alert("Error: " + err.message);
+            btn.innerText = "SUBMIT & SEND PROOF";
+            btn.disabled = false;
+        }
     }
 
-    const amount = amountInput.value;
-    btn.innerText = "SAVING REQUEST...";
-    btn.disabled = true;
+    async function fetchHistory() {
+        const phone = localStorage.getItem('userPhone');
+        if (!phone) return;
 
-    try {
-        // STEP 1: Get the user's name from the profiles table
-        const { data: profile, error: profileError } = await _supabase
-            .from('profiles')
-            .select('full_name') 
-            .eq('phone', phone)
-            .single();
+        const { data: user } = await _supabase.from('profiles').select('id').eq('phone', phone).single();
+        if (!user) return;
 
-        if (profileError) throw profileError;
-        
-        const userName = profile ? profile.full_name : "User";
-
-        // STEP 2: Save to 'deposits' table so it shows on Admin Panel
-        const { error: depositError } = await _supabase
+        const { data: history, error } = await _supabase
             .from('deposits')
-            .insert([{
-                phone: phone,
-                user_name: userName, // This makes it show on Admin
-                amount: parseFloat(amount),
-                status: 'pending'
-            }]);
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
 
-        if (depositError) throw depositError;
+        const list = document.getElementById('history-list');
+        if (error || !history || history.length === 0) {
+            list.innerHTML = `<p class="text-[10px] text-slate-400 text-center py-4 uppercase">No records found</p>`;
+            return;
+        }
 
-        // STEP 3: Construct the WhatsApp message
-        const adminWhatsApp = "237698771429"; 
-        const message = `*NEW DEPOSIT REQUEST*%0A%0A` +
-                        `*Name:* ${userName}%0A` +
-                        `*Phone:* ${phone}%0A` +
-                        `*Amount:* ₦${Number(amount).toLocaleString()}%0A%0A` +
-                        `I have made the transfer. Sending screenshot now!`;
-
-        const whatsappUrl = `https://wa.me/${adminWhatsApp}?text=${message}`;
-
-        // STEP 4: Redirect to WhatsApp
-        btn.innerText = "OPENING WHATSAPP...";
-        window.location.href = whatsappUrl;
-
-    } catch (err) {
-        console.error("Deposit Error:", err);
-        alert("Error: " + err.message);
-        btn.innerText = "CONFIRM DEPOSIT";
-        btn.disabled = false;
+        list.innerHTML = history.map(item => `
+            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div>
+                    <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
+                    <p class="text-[8px] text-slate-400 uppercase font-bold">${new Date(item.created_at).toLocaleDateString()}</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase ${
+                    item.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                }">
+                    ${item.status}
+                </span>
+            </div>
+        `).join('');
     }
-}
+
+    window.onload = fetchHistory;
     // Function to load history using phone number from localStorage
     async function fetchHistory() {
         const phone = localStorage.getItem('userPhone');
