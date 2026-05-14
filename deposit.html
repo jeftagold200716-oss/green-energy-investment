@@ -64,7 +64,7 @@
                     </p>
                 </div>
 
-                <button onclick="requestDeposit()" class="w-full solar-gradient text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-3">
+               <button onclick="submitDepositRequest()" class="w-full solar-gradient text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-3">
                     <img src="https://img.icons8.com/color/24/whatsapp.png" alt="WA"/>
                     SUBMIT & SEND PROOF
                 </button>
@@ -141,54 +141,55 @@
                 </div>
             `).join('');
         }
-
-       async function submitDepositRequest() {
+async function requestDeposit() {
+    console.log("Deposit function started...");
+    
     const amount = document.getElementById('dep_amount').value;
     const method = document.getElementById('dep_method').value;
     const phone = localStorage.getItem('userPhone');
-    const depositDate = new Date().toLocaleString(); 
 
-    if (!amount || amount < 1000) {
-        alert("Please enter a valid amount (Min 1000 NGN)");
+    if (!amount || !phone) {
+        alert("Please enter an amount and ensure you are logged in.");
         return;
     }
 
     try {
+        // 1. Get the User ID
         const { data: user, error: userError } = await _supabase
             .from('profiles')
             .select('id')
             .eq('phone', phone)
             .single();
 
-        if (userError || !user) throw new Error("User session not found.");
+        if (userError || !user) throw new Error("User not found in database.");
 
+        // 2. Insert into Deposits table
         const { error: depError } = await _supabase
             .from('deposits')
             .insert([{
                 user_id: user.id,
                 amount: parseFloat(amount),
                 method: method,
-                status: 'pending', 
+                status: 'pending',
                 created_at: new Date()
             }]);
 
         if (depError) throw depError;
 
-        // REPLACE THIS NUMBER WITH YOUR ACTUAL WHATSAPP NUMBER
+        // 3. WhatsApp Redirect
+        // Replace with your real number (e.g., 234...)
         const adminWhatsApp = "237698771429"; 
         const message = `*NEW DEPOSIT REQUEST*%0A` +
-                        `--------------------------%0A` +
                         `User ID: ${user.id}%0A` +
                         `Phone: ${phone}%0A` +
                         `Amount: ${amount} NGN%0A` +
-                        `Date: ${depositDate}%0A` +
-                        `--------------------------%0A` +
-                        `_Please add screenshot as proof below._`;
+                        `Method: ${method}`;
 
         window.location.href = `https://wa.me/${adminWhatsApp}?text=${message}`;
 
     } catch (err) {
-        alert("Request failed: " + err.message);
+        console.error("Deposit Error:", err);
+        alert("Error: " + err.message);
     }
 }
     </script>
