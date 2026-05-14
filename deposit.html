@@ -102,96 +102,114 @@
         </a>
     </nav>
 
-    <script>
-        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+   <script>
+    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-        function copyAccount() {
-            const num = document.getElementById('accNum').innerText;
-            navigator.clipboard.writeText(num);
-            alert("Account Number Copied!");
+    function copyAccount() {
+        const num = document.getElementById('accNum').innerText;
+        navigator.clipboard.writeText(num);
+        alert("Account Number Copied!");
+    }
+
+    // Fixed function name to match your button's onclick="submitDepositRequest()"
+    async function submitDepositRequest() {
+        console.log("Deposit process started...");
+        
+        // Corrected IDs to match your HTML inputs
+        const amountInput = document.getElementById('deposit_amount');
+        const nameInput = document.getElementById('sender_name');
+        
+        const amount = amountInput ? amountInput.value : null;
+        const senderName = nameInput ? nameInput.value : "Not Provided";
+        const phone = localStorage.getItem('userPhone');
+
+        if (!amount || !phone) {
+            alert("Please enter an amount and ensure you are logged in.");
+            return;
         }
 
-        async function fetchHistory() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            if (!user) return;
+        try {
+            // 1. Get the User ID from profiles table
+            const { data: user, error: userError } = await _supabase
+                .from('profiles')
+                .select('id')
+                .eq('phone', phone)
+                .single();
 
-            const { data: history, error } = await _supabase
+            if (userError || !user) throw new Error("User profile not found. Please log in again.");
+
+            // 2. Insert into Deposits table for your Admin Panel
+            const { error: depError } = await _supabase
                 .from('deposits')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
+                .insert([{
+                    user_id: user.id,
+                    amount: parseFloat(amount),
+                    method: 'OPay Transfer', // Defaulting to your Opay info
+                    status: 'pending',
+                    created_at: new Date()
+                }]);
 
-            const list = document.getElementById('history-list');
-            if (error || !history.length) {
-                list.innerHTML = `<p class="text-[10px] text-slate-400 text-center py-4 uppercase">No records found</p>`;
-                return;
-            }
+            if (depError) throw depError;
 
-            list.innerHTML = history.map(item => `
-                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                    <div>
-                        <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
-                        <p class="text-[8px] text-slate-400 uppercase font-bold">${new Date(item.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase ${
-                        item.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
-                    }">
-                        ${item.status}
-                    </span>
-                </div>
-            `).join('');
+            // 3. WhatsApp Redirect logic
+            const adminWhatsApp = "237698771429"; 
+            const message = window.encodeURIComponent(
+                `*NEW DEPOSIT REQUEST*\n` +
+                `--------------------------\n` +
+                `User ID: ${user.id}\n` +
+                `Phone: ${phone}\n` +
+                `Sender Name: ${senderName}\n` +
+                `Amount: ${amount} NGN\n` +
+                `--------------------------\n` +
+                `_I am sending the screenshot proof now._`
+            );
+
+            window.location.href = `https://wa.me/${adminWhatsApp}?text=${message}`;
+
+        } catch (err) {
+            console.error("Deposit Error:", err);
+            alert("Error: " + err.message);
         }
-async function requestDeposit() {
-    console.log("Deposit function started...");
-    
-    const amount = document.getElementById('dep_amount').value;
-    const method = document.getElementById('dep_method').value;
-    const phone = localStorage.getItem('userPhone');
-
-    if (!amount || !phone) {
-        alert("Please enter an amount and ensure you are logged in.");
-        return;
     }
 
-    try {
-        // 1. Get the User ID
-        const { data: user, error: userError } = await _supabase
-            .from('profiles')
-            .select('id')
-            .eq('phone', phone)
-            .single();
+    // Function to load history using phone number from localStorage
+    async function fetchHistory() {
+        const phone = localStorage.getItem('userPhone');
+        if (!phone) return;
 
-        if (userError || !user) throw new Error("User not found in database.");
+        // Get ID first
+        const { data: user } = await _supabase.from('profiles').select('id').eq('phone', phone).single();
+        if (!user) return;
 
-        // 2. Insert into Deposits table
-        const { error: depError } = await _supabase
+        const { data: history, error } = await _supabase
             .from('deposits')
-            .insert([{
-                user_id: user.id,
-                amount: parseFloat(amount),
-                method: method,
-                status: 'pending',
-                created_at: new Date()
-            }]);
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
 
-        if (depError) throw depError;
+        const list = document.getElementById('history-list');
+        if (error || !history || history.length === 0) {
+            list.innerHTML = `<p class="text-[10px] text-slate-400 text-center py-4 uppercase">No records found</p>`;
+            return;
+        }
 
-        // 3. WhatsApp Redirect
-        // Replace with your real number (e.g., 234...)
-        const adminWhatsApp = "237698771429"; 
-        const message = `*NEW DEPOSIT REQUEST*%0A` +
-                        `User ID: ${user.id}%0A` +
-                        `Phone: ${phone}%0A` +
-                        `Amount: ${amount} NGN%0A` +
-                        `Method: ${method}`;
-
-        window.location.href = `https://wa.me/${adminWhatsApp}?text=${message}`;
-
-    } catch (err) {
-        console.error("Deposit Error:", err);
-        alert("Error: " + err.message);
+        list.innerHTML = history.map(item => `
+            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div>
+                    <p class="font-black text-slate-800 text-sm">₦${Number(item.amount).toLocaleString()}</p>
+                    <p class="text-[8px] text-slate-400 uppercase font-bold">${new Date(item.created_at).toLocaleDateString()}</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase ${
+                    item.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                }">
+                    ${item.status}
+                </span>
+            </div>
+        `).join('');
     }
-}
-    </script>
+
+    // Load history when page opens
+    window.onload = fetchHistory;
+</script>
 </body>
 </html>
