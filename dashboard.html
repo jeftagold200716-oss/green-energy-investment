@@ -601,31 +601,28 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
         }
 
         async function claimDailyBonus() {
-            const phone = localStorage.getItem('userPhone');
-            const btnText = document.getElementById('claim-text');
-            btnText.innerText = "CHECKING...";
+    const userPhone = localStorage.getItem('userPhone');
+    
+    if (!userPhone) {
+        alert("Error: No user found. Please log out and log back in.");
+        return;
+    }
 
-            const { data, error } = await _supabase.rpc('claim_tier_bonus', { 
-                user_phone: phone 
-            });
+    // Call your Supabase function
+    const { data, error } = await _supabase.rpc('claim_tier_bonus', { 
+        user_phone: userPhone 
+    });
 
-            if (error) {
-                alert("Error: " + error.message);
-                btnText.innerText = "CLAIM DAILY BONUS";
-                return;
-            }
-
-            const result = Array.isArray(data) ? data[0] : data;
-
-            if (result.success) {
-                alert(`Success! Bonus added to your balance.`);
-                initializeDashboard();
-            } else {
-                alert(result.message);
-            }
-            btnText.innerText = "CLAIM DAILY BONUS";
-        }
-
+    if (error) {
+        console.error("Database Error:", error);
+        alert("Database error: " + error.message);
+    } else if (data && data.success) {
+        document.getElementById('balance').innerText = "₦" + data.new_balance;
+        alert("Success! Bonus added to your balance.");
+    } else {
+        alert(data.message || "You have already claimed your bonus for today!");
+    }
+}
         window.addEventListener('DOMContentLoaded', initializeDashboard);
     </script>
 </body>
