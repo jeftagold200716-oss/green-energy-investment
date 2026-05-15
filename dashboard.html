@@ -8,6 +8,30 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
+        <style>
+    /* PASTE THE BACKGROUND CSS HERE */
+    body {
+        margin: 0;
+        overflow-x: hidden;
+        background: #78cfff;
+    }
+
+    .hero-bg {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: -1; /* This keeps it behind your content */
+        overflow: hidden;
+    }
+
+    .blob {
+        position: absolute;
+        border-radius: 45% 55% 60% 40% / 40% 45% 55% 60%;
+        filter: blur(8px);
+        opacity: 0.6;
+        background: linear-gradient(135deg, rgba(0,255,255,0.9), rgba(255,0,255,0.85), rgba(130,0,255,0.9));
+    }
+
   body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .solar-gradient { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
         .welcome-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
@@ -16,6 +40,17 @@
         .nav-item.active-nav { color: #059669; }
     </style>
 </head>
+    <body>
+    <div class="hero-bg">
+        <div class="blob blob1"></div>
+        <div class="blob blob2"></div>
+        <div class="blob blob3"></div>
+        <div class="glow"></div>
+    </div>
+
+    <div class="relative z-10 max-w-lg mx-auto p-6">
+        </div>
+</body>
 <body class="pb-32">
 
     <div id="welcomePopup" class="welcome-modal active">
