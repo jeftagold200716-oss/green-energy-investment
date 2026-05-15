@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deposit Funds | Green Energy</title>
+    <title>Withdraw Funds | Green Energy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* NEON SKY BLUE & YELLOW ANIMATED BACKGROUND */
+        /* NEON PINK & PURPLE ANIMATED BACKGROUND */
         body {
             margin: 0;
             overflow-x: hidden;
-            background: #001a2c; /* Deep dark blue for neon contrast */
+            background: #1a001a; /* Deep dark purple for neon contrast */
             font-family: 'Inter', sans-serif;
         }
 
@@ -22,72 +22,74 @@
             width: 100%; height: 100%;
             z-index: -1;
             overflow: hidden;
-            background: radial-gradient(circle at center, #003554 0%, #000814 100%);
+            background: radial-gradient(circle at center, #2d0036 0%, #0a000d 100%);
         }
 
         .blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(50px);
-            opacity: 0.8;
-            box-shadow: 0 0 100px currentColor;
-            animation: move-neon 12s infinite alternate ease-in-out;
+            filter: blur(60px);
+            opacity: 0.7;
+            box-shadow: 0 0 120px currentColor;
+            animation: move-neon 10s infinite alternate ease-in-out;
         }
 
+        /* Neon Pink Blob */
         .blob1 { 
-            width: 500px; height: 500px; 
-            top: -10%; left: -10%; 
-            background: #00d4ff; 
-            color: #00d4ff;
+            width: 550px; height: 550px; 
+            top: -15%; left: -5%; 
+            background: #ff007f; 
+            color: #ff007f;
         }
         
+        /* Neon Purple Blob */
         .blob2 { 
-            width: 450px; height: 450px; 
-            bottom: -5%; right: -5%; 
-            background: #ffea00; 
-            color: #ffea00;
-            animation-delay: -3s;
-            animation-duration: 15s;
+            width: 500px; height: 500px; 
+            bottom: -10%; right: -5%; 
+            background: #a100ff; 
+            color: #a100ff;
+            animation-delay: -2s;
+            animation-duration: 14s;
         }
 
+        /* Deep Violet Blob */
         .blob3 { 
-            width: 350px; height: 350px; 
-            top: 40%; left: 30%; 
-            background: #ccff00; 
-            color: #ccff00;
-            animation-delay: -6s;
-            animation-duration: 10s;
+            width: 400px; height: 400px; 
+            top: 30%; left: 25%; 
+            background: #6200ea; 
+            color: #6200ea;
+            animation-delay: -5s;
+            animation-duration: 11s;
         }
 
         @keyframes move-neon {
             0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            50% { transform: translate(200px, 150px) scale(1.3) rotate(45deg); }
-            100% { transform: translate(-100px, 350px) scale(0.9) rotate(-45deg); }
+            50% { transform: translate(180px, 120px) scale(1.2) rotate(60deg); }
+            100% { transform: translate(-80px, 300px) scale(0.8) rotate(-30deg); }
         }
 
         /* UPDATED UI STYLES */
-        .solar-gradient { background: linear-gradient(135deg, #00d4ff 0%, #ffea00 100%); }
+        .withdraw-gradient { background: linear-gradient(135deg, #ff007f 0%, #a100ff 100%); }
         
-        /* Glassmorphism for the deposit form */
         .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 212, 255, 0.3);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 0, 127, 0.2);
         }
 
         .nav-item { color: #94a3b8; transition: all 0.2s; }
-        .active-nav { color: #00d4ff; }
+        .active-nav { color: #ff007f; }
         
         input:focus {
-            border-color: #00d4ff;
-            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+            border-color: #ff007f;
+            box-shadow: 0 0 0 2px rgba(255, 0, 127, 0.15);
         }
     </style>
 </head>
 <body class="pb-32">
     <div class="hero-bg">
         <div class="blob blob1"></div>
-        <div class="blob blob2 :blob2"></div>
+        <div class="blob blob2"></div>
         <div class="blob blob3"></div>
     </div>
 </head>
