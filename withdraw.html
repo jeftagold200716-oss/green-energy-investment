@@ -20,7 +20,8 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
             </a>
             <h1 class="font-black uppercase tracking-tighter">Withdrawal</h1>
-            <div class="w-9"></div> </div>
+            <div class="w-9"></div> 
+        </div>
         
         <div class="max-w-lg mx-auto mt-8 text-center">
             <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Total Assets</p>
@@ -33,7 +34,7 @@
             
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Amount (₦)</label>
-                <input type="number" id="w_amount" placeholder="Min 5,000" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-emerald-500 font-bold text-slate-700">
+                <input type="number" id="w_amount" placeholder="Min 1,000" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-emerald-500 font-bold text-slate-700">
             </div>
 
             <div class="space-y-1">
@@ -53,152 +54,121 @@
 
             <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
                 <p class="text-[9px] text-amber-700 font-bold leading-relaxed uppercase">
-                    ⚠️ Note: Withdrawals are processed within 24 hours. Ensure your bank details are 100% correct. Processing fee is 20%.
+                    ⚠️ Note: Withdrawals are processed within 24 hours. Ensure your bank details are 100% correct.
                 </p>
             </div>
 
-            <button onclick="submitWithdrawal()" id="btn_text" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg shadow-slate-200 active:scale-95 transition-all">
+            <button onclick="submitWithdrawal()" id="withdraw_btn" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg shadow-slate-200 active:scale-95 transition-all">
                 REQUEST PAYOUT
             </button>
         </div>
     </div>
 
-   <script>
-   const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
-
-    let currentBalance = 0;
-    let currentUserId = null;
+<script>
+    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
     async function syncBalanceDisplay() {
         const phone = localStorage.getItem('userPhone');
-        if (!phone) {
-            console.error("No userPhone found in localStorage");
-            return;
-        }
+        if (!phone) return;
 
-        // Fetch fresh data from the 'profiles' table
         const { data, error } = await _supabase
             .from('profiles')
-            .select('id, balance')
+            .select('balance')
             .eq('phone', phone)
             .single();
-
-        if (error) {
-            console.error("Database error:", error.message);
-            return;
-        }
 
         if (data) {
-            currentBalance = Number(data.balance || 0);
-            currentUserId = data.id;
+            document.getElementById('display_balance').innerText = `₦${Number(data.balance).toLocaleString()}`;
+        }
+    }
 
-            // FIX: Match the ID in your HTML (display_balance)
-            const balanceElement = document.getElementById('display_balance');
-            if (balanceElement) {
-                balanceElement.innerText = `₦${currentBalance.toLocaleString()}`;
+    async function submitWithdrawal() {
+        const phone = localStorage.getItem('userPhone');
+        const amount = parseFloat(document.getElementById('w_amount').value);
+        const bankName = document.getElementById('w_bank').value;
+        const accNum = document.getElementById('w_acc_num').value;
+        const accName = document.getElementById('w_acc_name').value;
+        const btn = document.getElementById('withdraw_btn');
+
+        if (!amount || amount < 1000) return alert("Minimum withdrawal is ₦1,000");
+        if (!bankName || !accNum || !accName) return alert("Please fill all bank details!");
+
+        btn.disabled = true;
+        btn.innerText = "PROCESSING...";
+
+        try {
+            // 1. Get profile
+            const { data: profile, error: pError } = await _supabase
+                .from('profiles')
+                .select('id, balance')
+                .eq('phone', phone)
+                .single();
+
+            if (pError || !profile) throw new Error("Account not found.");
+
+            if (profile.balance < amount) {
+                alert("Insufficient Balance!");
+                btn.disabled = false;
+                btn.innerText = "REQUEST PAYOUT";
+                return;
             }
-        }
-    }
 
-   async function submitWithdrawal() {
-    const phone = localStorage.getItem('userPhone');
-    const amount = parseFloat(document.getElementById('w_amount').value);
-    const bankName = document.getElementById('bank_name').value;
-    const accNum = document.getElementById('acc_num').value;
-    const accName = document.getElementById('acc_name').value;
-    const btn = event.currentTarget;
+            // 2. Debit immediately
+            const newBalance = profile.balance - amount;
+            const { error: updateError } = await _supabase
+                .from('profiles')
+                .update({ balance: newBalance })
+                .eq('id', profile.id);
 
-    if (!amount || amount < 1000) return alert("Minimum withdrawal is ₦1,000");
-    if (!bankName || !accNum || !accName) return alert("Fill all bank details!");
+            if (updateError) throw updateError;
 
-    btn.disabled = true;
-    btn.innerText = "PROCESSING...";
+            // 3. Log request
+            const { error: wError } = await _supabase
+                .from('withdrawals')
+                .insert([{
+                    user_id: profile.id,
+                    phone: phone,
+                    amount: amount,
+                    bank_name: bankName,
+                    account_number: accNum,
+                    account_holder: accName,
+                    status: 'pending'
+                }]);
 
-    try {
-        // 1. Get current profile to check balance
-        const { data: profile, error: pError } = await _supabase
-            .from('profiles')
-            .select('id, balance')
-            .eq('phone', phone)
-            .single();
+            if (wError) throw wError;
 
-        if (pError || !profile) throw new Error("Could not find account.");
+            alert("Withdrawal Successful! Account debited.");
+            location.reload();
 
-        if (profile.balance < amount) {
-            alert("Insufficient Balance!");
+        } catch (err) {
+            alert("Error: " + err.message);
             btn.disabled = false;
-            btn.innerText = "WITHDRAW";
-            return;
+            btn.innerText = "REQUEST PAYOUT";
         }
-
-        // 2. DEBIT THE ACCOUNT IMMEDIATELY
-        const newBalance = profile.balance - amount;
-        const { error: updateError } = await _supabase
-            .from('profiles')
-            .update({ balance: newBalance })
-            .eq('id', profile.id);
-
-        if (updateError) throw updateError;
-
-        // 3. LOG THE WITHDRAWAL REQUEST
-        const { error: wError } = await _supabase
-            .from('withdrawals')
-            .insert([{
-                user_id: profile.id,
-                phone: phone,
-                amount: amount,
-                bank_name: bankName,
-                account_number: accNum,
-                account_holder: accName,
-                status: 'pending'
-            }]);
-
-        if (wError) throw wError;
-
-        alert("Withdrawal Requested! Your account has been debited.");
-        location.reload();
-
-    } catch (err) {
-        alert("System Error: " + err.message);
-        btn.disabled = false;
-        btn.innerText = "RETRY";
     }
-}
+
+    // This makes sure balance shows when the page opens
+    window.onload = syncBalanceDisplay;
 </script>
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-    
+
+<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999]">
     <a href="dashboard.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         <span class="text-[9px] font-black uppercase tracking-tighter">Home</span>
     </a>
-
     <a href="deposit.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         <span class="text-[9px] font-black uppercase tracking-tighter">Deposit</span>
     </a>
-
-    <a href="withdraw.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
+    <a href="withdraw.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90" style="color: #059669;">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
         <span class="text-[9px] font-black uppercase tracking-tighter">Withdraw</span>
     </a>
-
-    <a href="products.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-        <span class="text-[9px] font-black uppercase tracking-tighter">Invest</span>
-    </a>
-
     <a href="account.html" class="nav-item flex flex-col items-center gap-1 transition-all active:scale-90">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
         <span class="text-[9px] font-black uppercase tracking-tighter">Account</span>
     </a>
 </nav>
 
-<style>
-    /* This makes sure the icon for the page you are currently on is Green */
-    /* To use this, add the class "text-emerald-600" to the button for that specific page, 
-       and "text-slate-400" to the others. */
-    .nav-item { color: #94a3b8; } /* Default Slate-400 */
-    .active-nav { color: #059669; } /* Emerald-600 */
-</style>
 </body>
 </html>
