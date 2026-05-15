@@ -163,53 +163,36 @@ async function loadDeposits() {
         </div>
     `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending deposits</p>';
 }
-       async function loadWithdraws() {
+        async function loadWithdraws() {
     const { data, error } = await _supabase
         .from('withdrawals')
         .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
+    if (error) return console.error(error);
+    
     const list = document.getElementById('withdraw-list');
     list.innerHTML = data.map(w => `
-        <div id="wit-${w.id}" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
-            <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Pending Payout</p>
+        <div id="wit-${w.id}" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
+            <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Withdrawal Request</p>
             <h4 class="font-black text-slate-800 text-lg">₦${Number(w.amount).toLocaleString()}</h4>
             
-            <div class="bg-slate-50 p-3 rounded-2xl my-3 space-y-1">
-                <p class="text-[10px] text-slate-600"><b>BANK:</b> ${w.bank_name}</p>
-                <p class="text-[10px] text-slate-600"><b>ACC:</b> ${w.account_number}</p>
-                <p class="text-[10px] text-slate-600"><b>NAME:</b> ${w.account_holder}</p>
-                <p class="text-[10px] text-slate-400"><b>PHONE:</b> ${w.phone}</p>
+            <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1 border border-slate-100">
+                <p class="text-[10px] text-slate-600 font-bold uppercase"><span class="text-slate-400">Bank:</span> ${w.bank_name || 'N/A'}</p>
+                <p class="text-[10px] text-slate-600 font-bold uppercase"><span class="text-slate-400">Acc No:</span> ${w.account_number || 'N/A'}</p>
+                <p class="text-[10px] text-slate-600 font-bold uppercase"><span class="text-slate-400">Holder:</span> ${w.account_holder || 'N/A'}</p>
+                <p class="text-[10px] text-emerald-600 font-bold uppercase"><span class="text-slate-400">Phone:</span> ${w.phone || 'N/A'}</p>
             </div>
 
             <div class="flex gap-2">
-                <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">CONFIRM PAID</button>
-                <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT (REFUND)</button>
+                <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
+                <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
             </div>
         </div>
     `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending withdrawals</p>';
 }
 
-async function handleWithdraw(id, uid, amt, status) {
-    if (!confirm(`Are you sure you want to ${status} this?`)) return;
-
-    try {
-        if (status === 'rejected') {
-            // REFUND LOGIC: Add money back to user balance
-            const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', uid).single();
-            const refundedBalance = (Number(profile.balance) || 0) + Number(amt);
-            await _supabase.from('profiles').update({ balance: refundedBalance }).eq('id', uid);
-        }
-
-        // Update withdrawal status
-        await _supabase.from('withdrawals').update({ status: status }).eq('id', id);
-        alert("System Updated!");
-        loadWithdraws();
-    } catch (err) {
-        alert(err.message);
-    }
-}
         async function loadUserStats() {
             const { data: users } = await _supabase.from('profiles').select('id');
             if (users) document.getElementById('u-total').innerText = users.length;
