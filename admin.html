@@ -110,112 +110,164 @@
         </button>
     </nav>
 
-    <script>
-        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+   <script>
+    const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
 
-        let currentTier = 1;
+    let currentTier = 1;
 
-        function setTier(t) {
-            currentTier = t;
-            document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('active-tier'));
-            document.getElementById(`tbtn-${t}`).classList.add('active-tier');
+    function setTier(t) {
+        currentTier = t;
+        document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('active-tier'));
+        document.getElementById(`tbtn-${t}`).classList.add('active-tier');
+    }
+
+    function switchView(viewId, title) {
+        document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
+        const targetView = document.getElementById('view-' + viewId);
+        if(targetView) targetView.classList.add('active');
+        
+        document.getElementById('view-title').innerText = title;
+        
+        // Navigation styling
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-emerald-600', 'text-slate-400'));
+        if(event && event.currentTarget) event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
+
+        if(viewId === 'deposits') loadDeposits();
+        if(viewId === 'withdraws') loadWithdraws();
+        if(viewId === 'users') loadUserStats();
+        if(viewId === 'revenue') loadRevenue();
+    }
+
+    async function publishProduct() {
+        const name = document.getElementById('p_name').value;
+        const price = document.getElementById('p_price').value;
+        const daily = document.getElementById('p_daily').value;
+        const validity = document.getElementById('p_duration').value; 
+
+        if(!name || !price || !daily || !validity) return alert("Fill all fields!");
+
+        const { error } = await _supabase.from('products').insert([{ 
+            name, 
+            price: Number(price), 
+            daily_return: Number(daily), 
+            validity_days: Number(validity), 
+            tier: currentTier,
+            status: 'active' 
+        }]);
+
+        if (error) alert(error.message);
+        else { 
+            alert(`Product Published to Tier ${currentTier}!`); 
+            location.reload(); 
         }
+    }
 
-        function switchView(viewId, title) {
-            document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-' + viewId).classList.add('active');
-            document.getElementById('view-title').innerText = title;
-            
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-emerald-600', 'text-slate-400'));
-            event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
-
-            if(viewId === 'deposits') loadDeposits();
-            if(viewId === 'withdraws') loadWithdraws();
-            if(viewId === 'users') loadUserStats();
-            if(viewId === 'revenue') loadRevenue();
-        }
-
-        async function publishProduct() {
-            const name = document.getElementById('p_name').value;
-            const price = document.getElementById('p_price').value;
-            const daily = document.getElementById('p_daily').value;
-            const validity = document.getElementById('p_duration').value; 
-
-            if(!name || !price || !daily || !validity) return alert("Fill all fields!");
-
-            const { error } = await _supabase.from('products').insert([{ 
-                name, 
-                price: Number(price), 
-                daily_return: Number(daily), 
-                validity_days: Number(validity), 
-                tier: currentTier,
-                status: 'active' 
-            }]);
-
-            if (error) alert(error.message);
-            else { 
-                alert(`Product Published to Tier ${currentTier}!`); 
-                location.reload(); 
-            }
-        }
-
-        async function loadDeposits() {
-            const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-            if (error) return console.error(error);
-            
-            const list = document.getElementById('deposit-list');
-            list.innerHTML = data.map(d => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
-                    <p class="text-[10px] font-black text-emerald-600 uppercase mb-1">Incoming Deposit</p>
-                    <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
-                    <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1">
-                        <p class="text-[10px] text-slate-500 font-bold uppercase"><span class="text-slate-400">Sender:</span> ${d.sender_name || 'N/A'}</p>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase"><span class="text-slate-400">Phone:</span> ${d.phone || 'N/A'}</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
-                        <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
-                    </div>
+    // --- DEPOSIT LOGIC ---
+    async function loadDeposits() {
+        const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+        if (error) return console.error(error);
+        
+        const list = document.getElementById('deposit-list');
+        list.innerHTML = data.map(d => `
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
+                <p class="text-[10px] font-black text-emerald-600 uppercase mb-1">Incoming Deposit</p>
+                <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
+                <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase"><span class="text-slate-400">Sender:</span> ${d.sender_name || 'N/A'}</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase"><span class="text-slate-400">Phone:</span> ${d.phone || 'N/A'}</p>
                 </div>
-            `).join('') || '<p class="text-center py-10 text-slate-400 text-[10px] font-bold">NO PENDING DEPOSITS</p>';
-        }
-
-        async function loadWithdraws() {
-            const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-            if (error) return console.error(error);
-            
-            const list = document.getElementById('withdraw-list');
-            list.innerHTML = data.map(w => `
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
-                    <p class="text-[10px] font-black text-rose-500 uppercase mb-1">Withdrawal Request</p>
-                    <h4 class="font-black text-slate-800 text-lg">₦${Number(w.amount).toLocaleString()}</h4>
-                    <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1">
-                        <p class="text-[10px] text-slate-600 font-bold uppercase">Bank: ${w.bank_name}</p>
-                        <p class="text-[10px] text-slate-600 font-bold uppercase">Acc: ${w.account_number}</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
-                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
-                    </div>
+                <div class="flex gap-2">
+                    <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
+                    <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
                 </div>
-            `).join('') || '<p class="text-center py-10 text-slate-400 text-[10px] font-bold">NO PENDING WITHDRAWALS</p>';
+            </div>
+        `).join('') || '<p class="text-center py-10 text-slate-400 text-[10px] font-bold">NO PENDING DEPOSITS</p>';
+    }
+
+    async function handleDeposit(id, userId, amount, status) {
+        if(!confirm(`Mark this deposit as ${status}?`)) return;
+
+        // 1. Update Deposit Status
+        const { error } = await _supabase.from('deposits').update({ status }).eq('id', id);
+        
+        if (error) return alert("Update failed: " + error.message);
+
+        // 2. If approved, add balance to the user
+        if (status === 'approved') {
+            const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
+            const newBalance = Number(profile.balance || 0) + Number(amount);
+            
+            await _supabase.from('profiles').update({ balance: newBalance }).eq('id', userId);
         }
 
-        async function loadUserStats() {
-            const { data: users } = await _supabase.from('profiles').select('id');
-            if (users) document.getElementById('u-total').innerText = users.length;
-        }
+        alert("Deposit " + status);
+        loadDeposits();
+    }
 
-        async function loadRevenue() {
-            const { data: dep } = await _supabase.from('deposits').select('amount').eq('status', 'approved');
-            const { data: wit } = await _supabase.from('withdrawals').select('amount').eq('status', 'success');
-            const totalIn = dep ? dep.reduce((a, c) => a + Number(c.amount), 0) : 0;
-            const totalOut = wit ? wit.reduce((a, c) => a + Number(c.amount), 0) : 0;
-            document.getElementById('rev-in').innerText = '₦' + totalIn.toLocaleString();
-            document.getElementById('rev-out').innerText = '₦' + totalOut.toLocaleString();
-        }
+    // --- WITHDRAWAL LOGIC ---
+    async function loadWithdraws() {
+        const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+        if (error) return console.error(error);
+        
+        const list = document.getElementById('withdraw-list');
+        list.innerHTML = data.map(w => `
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
+                <p class="text-[10px] font-black text-rose-500 uppercase mb-1">Withdrawal Request</p>
+                <p class="text-[8px] font-bold text-slate-400 uppercase">User's Name</p>
+                <h4 class="font-black text-slate-800 text-lg mb-2">${w.account_name || 'Unknown User'}</h4>
+                
+                <h4 class="font-black text-emerald-600 text-xl tracking-tighter">₦${Number(w.amount).toLocaleString()}</h4>
+                
+                <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1">
+                    <p class="text-[10px] text-slate-600 font-bold uppercase">Bank: ${w.bank_name}</p>
+                    <p class="text-[10px] text-slate-600 font-bold uppercase">Acc: ${w.account_number}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="handleWithdraw('${w.id}', 'success')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
+                    <button onclick="handleWithdraw('${w.id}', 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
+                </div>
+            </div>
+        `).join('') || '<p class="text-center py-10 text-slate-400 text-[10px] font-bold">NO PENDING WITHDRAWALS</p>';
+    }
 
-        window.onload = () => { loadRevenue(); loadUserStats(); };
-    </script>
-</body>
-</html>
+    async function handleWithdraw(id, status) {
+        if(!confirm(`Mark withdrawal as ${status}?`)) return;
+
+        const { error } = await _supabase.from('withdrawals').update({ status }).eq('id', id);
+        
+        if (error) alert("Error: " + error.message);
+        else {
+            alert("Withdrawal " + status);
+            loadWithdraws();
+        }
+    }
+
+    // --- STATS LOGIC ---
+    async function loadUserStats() {
+        const { data: users } = await _supabase.from('profiles').select('id');
+        if (users) {
+            const el = document.getElementById('u-total');
+            if(el) el.innerText = users.length;
+        }
+    }
+
+    async function loadRevenue() {
+        const { data: dep } = await _supabase.from('deposits').select('amount').eq('status', 'approved');
+        const { data: wit } = await _supabase.from('withdrawals').select('amount').eq('status', 'success');
+        
+        const totalIn = dep ? dep.reduce((a, c) => a + Number(c.amount), 0) : 0;
+        const totalOut = wit ? wit.reduce((a, c) => a + Number(c.amount), 0) : 0;
+        
+        const inEl = document.getElementById('rev-in');
+        const outEl = document.getElementById('rev-out');
+        
+        if(inEl) inEl.innerText = '₦' + totalIn.toLocaleString();
+        if(outEl) outEl.innerText = '₦' + totalOut.toLocaleString();
+    }
+
+    window.onload = () => { 
+        loadRevenue(); 
+        loadUserStats(); 
+        loadDeposits(); // Load deposits by default
+    };
+</script>
