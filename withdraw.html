@@ -100,59 +100,70 @@
         }
     }
 
-    async function submitWithdrawal() {
-        const amount = parseFloat(document.getElementById('w_amount').value);
-        const bank = document.getElementById('w_bank').value;
-        const num = document.getElementById('w_acc_num').value;
-        const name = document.getElementById('w_acc_name').value;
-        const btnText = document.getElementById('btn_text');
+   async function submitWithdrawal() {
+    const phone = localStorage.getItem('userPhone');
+    const amount = parseFloat(document.getElementById('w_amount').value);
+    const bankName = document.getElementById('bank_name').value;
+    const accNum = document.getElementById('acc_num').value;
+    const accName = document.getElementById('acc_name').value;
+    const btn = event.currentTarget;
 
-        // 1. Validation Checks
-        if (isNaN(amount) || amount < 5000) {
-            return alert("Minimum withdrawal is ₦5,000");
-        }
-        
-        if (amount > currentBalance) {
-            return alert(`Insufficient Balance! Your current balance is ₦${currentBalance.toLocaleString()}`);
-        }
-        
-        if (!bank || !num || !name) {
-            return alert("Please fill all bank details");
+    if (!amount || amount < 1000) return alert("Minimum withdrawal is ₦1,000");
+    if (!bankName || !accNum || !accName) return alert("Fill all bank details!");
+
+    btn.disabled = true;
+    btn.innerText = "PROCESSING...";
+
+    try {
+        // 1. Get current profile to check balance
+        const { data: profile, error: pError } = await _supabase
+            .from('profiles')
+            .select('id, balance')
+            .eq('phone', phone)
+            .single();
+
+        if (pError || !profile) throw new Error("Could not find account.");
+
+        if (profile.balance < amount) {
+            alert("Insufficient Balance!");
+            btn.disabled = false;
+            btn.innerText = "WITHDRAW";
+            return;
         }
 
-        if (!currentUserId) {
-            return alert("User session error. Please refresh and try again.");
-        }
+        // 2. DEBIT THE ACCOUNT IMMEDIATELY
+        const newBalance = profile.balance - amount;
+        const { error: updateError } = await _supabase
+            .from('profiles')
+            .update({ balance: newBalance })
+            .eq('id', profile.id);
 
-        // 2. Disable UI
-        btnText.innerText = "PROCESSING...";
-        btnText.disabled = true;
+        if (updateError) throw updateError;
 
-        try {
-            // 3. Insert Withdrawal Request
-            const { error } = await _supabase.from('withdrawals').insert([{
-                user_id: currentUserId,
+        // 3. LOG THE WITHDRAWAL REQUEST
+        const { error: wError } = await _supabase
+            .from('withdrawals')
+            .insert([{
+                user_id: profile.id,
+                phone: phone,
                 amount: amount,
-                bank_name: bank,
-                account_number: num,
-                account_name: name,
+                bank_name: bankName,
+                account_number: accNum,
+                account_holder: accName,
                 status: 'pending'
             }]);
 
-            if (error) throw error;
+        if (wError) throw wError;
 
-            alert("Withdrawal Request Submitted Successfully!");
-            window.location.href = "account.html"; 
+        alert("Withdrawal Requested! Your account has been debited.");
+        location.reload();
 
-        } catch (err) {
-            alert("Error: " + err.message);
-            btnText.innerText = "REQUEST PAYOUT";
-            btnText.disabled = false;
-        }
+    } catch (err) {
+        alert("System Error: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "RETRY";
     }
-
-    // Run this the moment the page finishes loading
-    window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
+}
 </script>
     <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center p-4 z-[999] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
     
