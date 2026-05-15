@@ -8,6 +8,18 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
+        .error-shake { animation: shake 0.4s ease-in-out; }
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+#claim-note {
+    font-size: 10px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
         /* NEON SKY BLUE & YELLOW ANIMATED BACKGROUND */
         body {
             margin: 0;
@@ -144,10 +156,12 @@
             </div>
         </div>
        
-        <div class="mb-6 space-y-4">
-           <button id="claim-btn" onclick="claimDailyBonus()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-sky-200 flex items-center justify-center gap-2 transition-all active:scale-95">
-    <span id="claim-text">CLAIM DAILY BONUS</span>
-</button>
+       <div class="mb-6 space-y-2 text-center">
+    <button id="claim-btn" onclick="claimDailyBonus()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-sky-200 flex items-center justify-center gap-2 transition-all active:scale-95">
+        <span id="claim-text">CLAIM DAILY BONUS</span>
+    </button>
+    <p id="claim-note" class="text-slate-400 hidden"></p> 
+</div>
 
             <div class="glass-card p-4 rounded-2xl border border-slate-100 shadow-sm">
                 <p class="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Your Invitation Link</p>
@@ -604,40 +618,37 @@ Renewable-energy and financial technology sectors continue to evolve, and transp
     const userPhone = localStorage.getItem('userPhone');
     const claimBtn = document.getElementById('claim-btn');
     const claimText = document.getElementById('claim-text');
+    const claimNote = document.getElementById('claim-note');
 
-    if (!userPhone) {
-        alert("Error: No user found. Please log out and log back in.");
-        return;
-    }
+    if (!userPhone) return;
 
-    // Disable button to prevent double-clicking
-    claimBtn.disabled = true;
-    claimText.innerText = "PROCESSING...";
+    // Reset UI
+    claimBtn.classList.remove('error-shake');
+    claimNote.classList.add('hidden');
 
-    try {
-        const { data, error } = await _supabase.rpc('claim_tier_bonus', { 
-            user_phone: userPhone 
-        });
+    const { data, error } = await _supabase.rpc('claim_tier_bonus', { 
+        user_phone: userPhone 
+    });
 
-        if (error) {
-            console.error("Database Error:", error);
-            alert("Database error: " + error.message);
-        } else if (data && data.success) {
-            // Update balance with proper formatting
-            const balanceEl = document.getElementById('balance');
-            if (balanceEl) {
-                balanceEl.innerText = `₦${Number(data.new_balance).toLocaleString()}`;
-            }
-            alert("Success! Bonus added to your balance.");
-        } else {
-            alert(data.message || "You have already claimed your bonus for today!");
-        }
-    } catch (err) {
-        console.error("Critical Error:", err);
-    } finally {
-        // Re-enable button
-        claimBtn.disabled = false;
-        claimText.innerText = "CLAIM DAILY BONUS";
+    if (data && data.success) {
+        // Success behavior
+        const balanceEl = document.getElementById('balance');
+        if (balanceEl) balanceEl.innerText = `₦${Number(data.new_balance).toLocaleString()}`;
+        
+        claimNote.innerText = "Bonus successfully added to your wallet.";
+        claimNote.className = "text-[10px] font-bold text-emerald-500 block";
+    } else {
+        // Professional "Already Claimed" behavior
+        claimBtn.classList.add('error-shake');
+        
+        // Show a professional note instead of an alert
+        claimNote.innerText = "Your next bonus is not yet available. Please check back in 24 hours.";
+        claimNote.className = "text-[10px] font-bold text-rose-500 block";
+        
+        // Hide the note after 4 seconds
+        setTimeout(() => {
+            claimNote.classList.add('hidden');
+        }, 4000);
     }
 }
         window.addEventListener('DOMContentLoaded', initializeDashboard);
