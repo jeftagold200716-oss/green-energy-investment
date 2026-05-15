@@ -69,10 +69,17 @@
         </section>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center p-3 z-[999] shadow-2xl overflow-x-auto no-scrollbar">
-        <button onclick="switchView('publish', 'Publish Product')" class="nav-btn text-emerald-600 flex flex-col items-center min-w-[70px]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+   
+    <button onclick="setTier(1)" class="tier-btn active-tier">BRONZE</button>
+    <button onclick="setTier(2)" class="tier-btn">SILVER</button>
+    <button onclick="setTier(3)" class="tier-btn">GOLD</button>
+    <button onclick="setTier(4)" class="tier-btn">DIAMOND</button>
+    <button onclick="setTier(5)" class="tier-btn">VIP</button>
+</div>
+
+<input type="hidden" id="selected_tier" value="1">
             <span class="text-[8px] font-bold uppercase">Product</span>
+        
         </button>
         <button onclick="switchView('deposits', 'Deposits')" class="nav-btn text-slate-400 flex flex-col items-center min-w-[70px]">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 11l3-3m0 0l3 3m-3-3v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
