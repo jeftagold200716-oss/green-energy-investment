@@ -216,31 +216,40 @@ window.addEventListener('DOMContentLoaded', syncBalanceDisplay);
         console.log("Deposit History Loaded:", history);
     }
 }
-    async function fetchWithdrawHistory() {
+    async function loadWithdrawalHistory() {
     const phone = localStorage.getItem('userPhone');
-    const { data: user } = await _supabase.from('profiles').select('id').eq('phone', phone).single();
-    
-    const { data: history } = await _supabase
+    if (!phone) return;
+
+    // Fetch history based on phone number (safer than ID)
+    const { data, error } = await _supabase
         .from('withdrawals')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('phone', phone)
         .order('created_at', { ascending: false });
 
-    const list = document.getElementById('withdraw-history-list');
-    list.innerHTML = history.map(w => `
-        <div class="flex justify-between items-center bg-white p-4 rounded-2xl mb-2 border border-slate-100">
+    if (error) return console.error(error);
+
+    const historyContainer = document.getElementById('withdraw-history-list');
+    if (!historyContainer) return;
+
+    historyContainer.innerHTML = data.map(w => `
+        <div class="flex justify-between items-center bg-white p-4 rounded-2xl mb-2 border border-slate-50">
             <div>
                 <p class="font-black text-slate-800 text-sm">₦${Number(w.amount).toLocaleString()}</p>
-                <p class="text-[8px] text-slate-400 uppercase">${new Date(w.created_at).toLocaleDateString()}</p>
+                <p class="text-[8px] text-slate-400 font-bold uppercase">${new Date(w.created_at).toLocaleDateString()}</p>
             </div>
-            <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase ${
-                w.status === 'success' ? 'bg-emerald-100 text-emerald-600' : 
-                w.status === 'rejected' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'
-            }">${w.status}</span>
+            <div class="text-right">
+                <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase ${
+                    w.status === 'success' ? 'bg-emerald-100 text-emerald-600' : 
+                    w.status === 'rejected' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-700'
+                }">${w.status}</span>
+            </div>
         </div>
-    `).join('') || '<p class="text-center text-[10px] text-slate-400">No history yet</p>';
+    `).join('') || '<p class="text-center py-6 text-slate-400 text-[10px] font-bold">NO WITHDRAWAL HISTORY</p>';
 }
 
+// Make sure it runs when page opens
+window.onload = loadWithdrawalHistory;
     // 3. Tab Switching Logic
     async function showSection(type) {
         const container = document.getElementById('section_container');
