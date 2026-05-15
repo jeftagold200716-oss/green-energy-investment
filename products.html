@@ -156,38 +156,62 @@
             }).join('');
         }
 
-        async function buyProduct(pId, price, daily, days) {
-            if(currentUserBalance < price) return alert("Insufficient Balance! Please Deposit.");
+       async function buyProduct(pId, price, daily, days) {
+    const userPhone = localStorage.getItem('userPhone');
+    
+    // 1. First, get the User's Internal ID and current balance
+    const { data: profile, error: profileError } = await _supabase
+        .from('profiles')
+        .select('id, balance')
+        .eq('phone', userPhone)
+        .single();
 
-            if(confirm(`Invest ₦${price.toLocaleString()} for ${days} days?`)) {
-                // Calculate Expiry
-                let exp = new Date();
-                exp.setDate(exp.getDate() + days);
+    if (profileError || !profile) {
+        return alert("Session expired. Please log in again.");
+    }
 
-                // 1. Debit User
-                const { error: debitError } = await _supabase.from('profiles').update({ 
-                    balance: currentUserBalance - price 
-                }).eq('phone', userPhone);
+    if (profile.balance < price) {
+        return alert("Insufficient Balance! Please Deposit.");
+    }
 
-                if(debitError) return alert("Error processing payment");
+    if (confirm(`Invest ₦${price.toLocaleString()} for ${days} days?`)) {
+        // Calculate Expiry Date
+        let exp = new Date();
+        exp.setDate(exp.getDate() + days);
 
-                // 2. Create Investment Record
-                const { error: invError } = await _supabase.from('investments').insert([{
-                    user_id: (await _supabase.from('profiles').select('id').eq('phone', userPhone).single()).data.id,
-                    product_id: pId,
-                    amount_paid: price,
-                    daily_return: daily,
-                    expiry_date: exp.toISOString(),
-                    status: 'active'
-                }]);
+        // 2. Perform the Investment (The "Safety First" way)
+        // We do the insert first. If it fails, we don't debit the money.
+        const { error: invError } = await _supabase.from('investments').insert([{
+            user_id: profile.id, // Using the ID we just fetched
+            product_id: pId,
+            amount_paid: price,
+            daily_return: daily,
+            expiry_date: exp.toISOString(),
+            status: 'active',
+            total_earned: 0,
+            last_payout: new Date().toISOString()
+        }]);
 
-                if(invError) alert("Money debited but error activating plan. Contact Admin!");
-                else {
-                    alert("Investment Successful! Visit Account page to see active plans.");
-                    location.reload();
-                }
-            }
+        if (invError) {
+            console.error("Investment Error:", invError);
+            return alert("Error activating plan: " + invError.message);
         }
+
+        // 3. ONLY if the investment was saved, we debit the money
+        const { error: debitError } = await _supabase
+            .from('profiles')
+            .update({ balance: profile.balance - price })
+            .eq('id', profile.id);
+
+        if (debitError) {
+            // This is a rare backup error
+            alert("Plan active, but balance update failed. Contact Admin.");
+        } else {
+            alert("Investment Successful!");
+            location.reload();
+        }
+    }
+}
 
         window.onload = init;
     </script>
