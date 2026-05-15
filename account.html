@@ -8,16 +8,63 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; background: #78cfff; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tier-card { transition: all 0.3s ease; }
         .tier-card:hover { transform: translateY(-5px); }
+
+        /* --- BACKGROUND STYLING --- */
+        .hero-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: linear-gradient(135deg, #69c9ff 0%, #52b5ff 30%, #4ca7ff 60%, #3f8fff 100%);
+        }
+        .hero-bg::before {
+            content:''; position:absolute; inset:0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 60%);
+            backdrop-filter: blur(80px);
+        }
+        .blob {
+            position:absolute; border-radius:45% 55% 60% 40% / 40% 45% 55% 60%;
+            filter: blur(5px); opacity:0.6;
+            background: linear-gradient(135deg, rgba(0,255,255,0.9), rgba(255,0,255,0.85), rgba(130,0,255,0.9));
+            animation: float 20s infinite alternate, morph 10s infinite alternate ease-in-out;
+        }
+        .blob1 { width:400px; height:400px; top:-100px; left:-100px; }
+        .blob2 { width:350px; height:350px; top:30%; right:-100px; animation-delay: -5s; }
+        .blob3 { width:500px; height:500px; bottom:-200px; left:10%; animation-delay: -2s; }
+        
+        @keyframes float {
+            0% { transform: translate(0,0) rotate(0deg); }
+            100% { transform: translate(50px, 50px) rotate(15deg); }
+        }
+        @keyframes morph {
+            0%, 100% { border-radius: 42% 58% 60% 40% / 45% 40% 60% 55%; }
+            50% { border-radius: 60% 40% 35% 65% / 55% 60% 40% 45%; }
+        }
+
+        /* --- ACTIVE TAB STYLING --- */
+        .active-tab {
+            background-color: #10b981 !important; /* Emerald 500 */
+            border-color: #059669 !important;
+            transform: scale(0.95);
+        }
+        .active-tab span { color: white !important; }
+        .active-tab div { background-color: rgba(255,255,255,0.2) !important; color: white !important; }
     </style>
 </head>
-<body class="bg-slate-50 pb-32">
+<body class="pb-32">
 
-    <div class="max-w-lg mx-auto p-6">
+    <div class="hero-bg">
+        <div class="blob blob1"></div>
+        <div class="blob blob2"></div>
+        <div class="blob blob3"></div>
+    </div>
+
+    <div class="max-w-lg mx-auto p-6 relative z-10">
         <h1 class="text-3xl font-black text-slate-800 mb-6 tracking-tighter">Profile</h1>
 
         <div class="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl mb-6 relative overflow-hidden">
@@ -40,42 +87,40 @@
             </div>
             <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
         </div>
-<div class="grid grid-cols-2 gap-3 mb-8 relative z-10">
-    <button id="btn-products" onclick="showSection('products')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
-        <div class="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-        </div>
-        <span class="text-[10px] font-black uppercase text-slate-600">My Products</span>
-    </button>
 
-    <button id="btn-deposits" onclick="showSection('deposits')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
-        <div class="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        </div>
-        <span class="text-[10px] font-black uppercase text-slate-600">Deposit History</span>
-    </button>
+        <div class="grid grid-cols-2 gap-3 mb-8">
+            <button id="btn-products" onclick="showSection('products')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
+                <div class="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                </div>
+                <span class="text-[10px] font-black uppercase text-slate-600">My Products</span>
+            </button>
 
-    <button id="btn-withdrawals" onclick="showSection('withdrawals')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
-        <div class="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-        </div>
-        <span class="text-[10px] font-black uppercase text-slate-600">Withdrawals</span>
-    </button>
+            <button id="btn-deposits" onclick="showSection('deposits')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
+                <div class="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <span class="text-[10px] font-black uppercase text-slate-600">Deposit History</span>
+            </button>
 
-    <button id="btn-team" onclick="showSection('team')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
-        <div class="w-10 h-10 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-        </div>
-        <span class="text-[10px] font-black uppercase text-slate-600">My Team</span>
-    </button>
-</div>
+            <button id="btn-withdrawals" onclick="showSection('withdrawals')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
+                <div class="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <span class="text-[10px] font-black uppercase text-slate-600">Withdrawals</span>
+            </button>
+
+            <button id="btn-team" onclick="showSection('team')" class="nav-tab bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-2 transition-all">
+                <div class="w-10 h-10 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+                <span class="text-[10px] font-black uppercase text-slate-600">My Team</span>
             </button>
         </div>
 
-        <div id="section_container" class="space-y-4">
-             </div>
+        <div id="section_container" class="space-y-4 min-h-[200px]"></div>
 
-        <button onclick="logout()" class="w-full mt-10 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-red-500 transition-all">
+        <button onclick="logout()" class="w-full mt-10 text-slate-800 text-[10px] font-black uppercase tracking-widest hover:text-red-600 transition-all">
             Sign Out Account
         </button>
     </div>
@@ -92,7 +137,7 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center p-4 z-50 shadow-lg">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 flex justify-around items-center p-4 z-50 shadow-lg">
         <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
             <span class="text-[8px] font-black uppercase">Home</span>
@@ -127,14 +172,13 @@
         ];
 
         let currentUser = null;
-        let allInvestments = []; // Store to allow instant toggling
+        let allInvestments = [];
 
         async function initAccount() {
             const phone = localStorage.getItem('userPhone');
             if (!phone) { window.location.href = "index.html"; return; }
 
             const { data, error } = await _supabase.from('profiles').select('*').eq('phone', phone).single();
-            
             if (data) {
                 currentUser = data;
                 document.getElementById('acc_balance').innerText = `₦${Number(data.balance || 0).toLocaleString()}`;
@@ -145,52 +189,57 @@
         }
 
         async function showSection(type) {
+            // Update Tab UI
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active-tab'));
+            const activeBtn = document.getElementById('btn-' + type);
+            if(activeBtn) activeBtn.classList.add('active-tab');
+
             const container = document.getElementById('section_container');
-            container.innerHTML = '<div class="text-center py-10 animate-pulse font-black text-[10px] text-slate-400 tracking-widest">SYNCING...</div>';
+            container.innerHTML = '<div class="text-center py-10 animate-pulse font-black text-[10px] text-slate-800 tracking-widest uppercase">Syncing Data...</div>';
 
             try {
                 if (type === 'products') {
                     const { data } = await _supabase.from('investments').select('*, products(name)').eq('user_id', currentUser.id);
                     allInvestments = data || [];
-                    renderProductList('active'); // Default to active
+                    renderProductList('active');
                 } 
                 else if (type === 'deposits') {
                     const { data } = await _supabase.from('deposits').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-                    container.innerHTML = `<h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 px-2">Deposit History</h2>` + 
+                    container.innerHTML = `<h2 class="text-[10px] font-black text-slate-800 uppercase mb-4 px-2 tracking-tighter">Deposit History</h2>` + 
                     ((data && data.length > 0) ? data.map(d => `
-                        <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center mb-2">
-                            <div><p class="font-black text-slate-800 text-sm">₦${Number(d.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(d.created_at).toLocaleDateString()}</p></div>
-                            <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${d.status === 'approved' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-700'}">${d.status}</span>
+                        <div class="bg-white/90 backdrop-blur-sm p-5 rounded-3xl border border-white/20 flex justify-between items-center mb-2 shadow-sm">
+                            <div><p class="font-black text-slate-800 text-sm">₦${Number(d.amount).toLocaleString()}</p><p class="text-[9px] text-slate-500 font-bold">${new Date(d.created_at).toLocaleDateString()}</p></div>
+                            <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${d.status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-amber-100 text-amber-700'}">${d.status}</span>
                         </div>
-                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Deposit History</p>');
+                    `).join('') : '<p class="text-center text-slate-800 text-[10px] font-bold uppercase py-10">No Deposit History</p>');
                 } 
                 else if (type === 'withdrawals') {
                     const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-                    container.innerHTML = `<h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 px-2">Withdrawal History</h2>` +
+                    container.innerHTML = `<h2 class="text-[10px] font-black text-slate-800 uppercase mb-4 px-2 tracking-tighter">Withdrawal History</h2>` +
                     ((data && data.length > 0) ? data.map(w => `
-                        <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center mb-2">
-                            <div><p class="font-black text-slate-800 text-sm">₦${Number(w.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(w.created_at).toLocaleDateString()}</p></div>
-                            <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${w.status === 'success' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-700'}">${w.status}</span>
+                        <div class="bg-white/90 backdrop-blur-sm p-5 rounded-3xl border border-white/20 flex justify-between items-center mb-2 shadow-sm">
+                            <div><p class="font-black text-slate-800 text-sm">₦${Number(w.amount).toLocaleString()}</p><p class="text-[9px] text-slate-500 font-bold">${new Date(w.created_at).toLocaleDateString()}</p></div>
+                            <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${w.status === 'success' ? 'bg-emerald-500 text-white' : 'bg-amber-100 text-amber-700'}">${w.status}</span>
                         </div>
-                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Withdrawal History</p>');
+                    `).join('') : '<p class="text-center text-slate-800 text-[10px] font-bold uppercase py-10">No Withdrawal History</p>');
                 } 
                 else if (type === 'team') {
                     const { data: team } = await _supabase.from('profiles').select('*').eq('referred_by', currentUser.id);
                     container.innerHTML = `
-                        <div class="bg-slate-900 p-6 rounded-[2rem] text-white mb-4">
+                        <div class="bg-slate-900 p-6 rounded-[2rem] text-white mb-4 shadow-xl">
                             <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Referral Stats</p>
                             <p class="text-2xl font-black mt-1">Total Members: ${team?.length || 0}</p>
                         </div>
                         ${team && team.length > 0 ? team.map(m => `
-                            <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center mb-2">
+                            <div class="bg-white/90 backdrop-blur-sm p-4 rounded-2xl border border-white/20 flex justify-between items-center mb-2">
                                 <p class="font-black text-xs text-slate-800">${m.phone.substring(0,6)}***</p>
                                 <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-lg uppercase">Tier ${m.tier || 1}</span>
                             </div>
-                        `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Team Members Yet</p>'}
+                        `).join('') : '<p class="text-center text-slate-800 text-[10px] font-bold uppercase py-10">No Team Members Yet</p>'}
                     `;
                 }
             } catch (e) {
-                container.innerHTML = '<p class="text-center text-red-400 text-[10px] font-black uppercase">SYNC ERROR</p>';
+                container.innerHTML = '<p class="text-center text-red-600 text-[10px] font-black uppercase">Sync Error</p>';
             }
         }
 
@@ -203,7 +252,7 @@
             container.innerHTML = `
                 <div class="flex items-center justify-between mb-4 px-2">
                     <h2 class="text-[10px] font-black text-slate-800 uppercase tracking-tighter">Investment Assets</h2>
-                    <div class="flex bg-slate-200 p-1 rounded-xl">
+                    <div class="flex bg-slate-200/50 p-1 rounded-xl backdrop-blur-sm">
                         <button onclick="renderProductList('active')" class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${status === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}">Active (${activeCount})</button>
                         <button onclick="renderProductList('expired')" class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${status === 'expired' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}">Expired (${expiredCount})</button>
                     </div>
@@ -211,9 +260,7 @@
 
                 <div class="space-y-4">
                     ${filtered.length > 0 ? filtered.map(i => `
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative overflow-hidden">
-                            ${status === 'active' ? '<div class="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 blur-2xl rounded-full"></div>' : ''}
-                            
+                        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-[2rem] shadow-sm border border-white/40 relative overflow-hidden">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h3 class="font-black text-slate-800 text-sm uppercase">${i.products?.name || 'Investment Plan'}</h3>
@@ -223,7 +270,6 @@
                                     ${status}
                                 </span>
                             </div>
-
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="bg-slate-50 p-4 rounded-2xl">
                                     <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Daily Return</p>
@@ -234,17 +280,8 @@
                                     <p class="text-slate-800 font-black text-sm">₦${Number(i.total_earned || 0).toLocaleString()}</p>
                                 </div>
                             </div>
-
-                            <div class="mt-4 flex items-center justify-between px-1">
-                                <p class="text-[8px] font-bold text-slate-400 uppercase">Expires: ${new Date(i.expiry_date).toLocaleDateString()}</p>
-                                ${status === 'active' ? `
-                                <div class="flex items-center gap-1">
-                                    <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                                    <p class="text-[8px] font-black text-emerald-600 uppercase">Earning Active</p>
-                                </div>` : '<p class="text-[8px] font-black text-rose-400 uppercase">Completed</p>'}
-                            </div>
                         </div>
-                    `).join('') : `<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No ${status} Products found</p>`}
+                    `).join('') : `<p class="text-center text-slate-800 text-[10px] font-bold uppercase py-10">No ${status} Products</p>`}
                 </div>
             `;
         }
@@ -256,7 +293,7 @@
             const userTier = currentUser ? (currentUser.tier || 1) : 1;
 
             list.innerHTML = tierData.map(t => `
-                <div class="tier-card p-6 rounded-[2rem] border ${userTier === t.level ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-white/5 border-white/10 text-white'} mb-4">
+                <div class="tier-card p-6 rounded-[2rem] border ${userTier === t.level ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-white/10 border-white/10 text-white'} mb-4">
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-black text-lg">${t.name}</h4>
                         <span class="text-[10px] font-black uppercase opacity-70">${t.price === 'Free' ? 'Free' : '₦'+t.price}</span>
