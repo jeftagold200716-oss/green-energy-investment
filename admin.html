@@ -6,16 +6,32 @@
     <title>Master Admin | J-TECH</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .admin-view { display: none; }
         .admin-view.active { display: block; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .tier-btn {
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: 900;
+            white-space: nowrap;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .active-tier {
+            background: #059669;
+            color: white;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+        }
     </style>
 </head>
-<body class="bg-slate-100 pb-24">
+<body class="bg-slate-100 pb-32">
 
     <div class="bg-slate-900 text-white p-6 rounded-b-[2rem] shadow-lg mb-6">
         <h1 id="view-title" class="text-2xl font-black uppercase tracking-tighter">Publish Product</h1>
@@ -26,35 +42,37 @@
         
         <section id="view-publish" class="admin-view active space-y-4">
             <div class="bg-white p-6 rounded-[2rem] shadow-sm">
-                <div class="space-y-4">
-                    <input type="text" id="p_name" placeholder="Product Name" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800">
-                    <input type="number" id="p_price" placeholder="Price (₦)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
-                    <input type="number" id="p_daily" placeholder="Daily Return (₦)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
-                    <input type="number" id="p_duration" placeholder="Duration (Days)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">Select Category</p>
+                <div class="flex overflow-x-auto gap-2 pb-4 no-scrollbar">
+                    <button onclick="setTier(1)" id="tbtn-1" class="tier-btn active-tier">BRONZE</button>
+                    <button onclick="setTier(2)" id="tbtn-2" class="tier-btn">SILVER</button>
+                    <button onclick="setTier(3)" id="tbtn-3" class="tier-btn">GOLD</button>
+                    <button onclick="setTier(4)" id="tbtn-4" class="tier-btn">DIAMOND</button>
+                    <button onclick="setTier(5)" id="tbtn-5" class="tier-btn">VIP</button>
+                </div>
+
+                <div class="space-y-4 mt-4">
+                    <input type="text" id="p_name" placeholder="Product Name" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800 border border-slate-100">
+                    <input type="number" id="p_price" placeholder="Price (₦)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
+                    <input type="number" id="p_daily" placeholder="Daily Return (₦)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
+                    <input type="number" id="p_duration" placeholder="Duration (Days)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
                     <button onclick="publishProduct()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition-transform">PUSH TO WEBSITE</button>
                 </div>
             </div>
         </section>
 
         <section id="view-deposits" class="admin-view space-y-4">
-            <div id="deposit-list" class="space-y-3">
-                </div>
+            <div id="deposit-list" class="space-y-3"></div>
         </section>
 
         <section id="view-withdraws" class="admin-view space-y-4">
-            <div id="withdraw-list" class="space-y-3">
-                </div>
+            <div id="withdraw-list" class="space-y-3"></div>
         </section>
 
-        <section id="view-users" class="admin-view space-y-4">
-            <div class="grid grid-cols-3 gap-2">
-                <div class="bg-white p-4 rounded-2xl text-center shadow-sm">
-                    <p class="text-[8px] font-bold text-slate-400 uppercase">Total Users</p>
-                    <p id="u-total" class="font-black text-emerald-600 text-lg">0</p>
-                </div>
-            </div>
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm">
-                <canvas id="userChart" style="max-height: 250px;"></canvas>
+        <section id="view-users" class="admin-view space-y-4 text-center">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Total Platform Users</p>
+                <h2 id="u-total" class="text-5xl font-black text-slate-800 mt-2">0</h2>
             </div>
         </section>
 
@@ -64,56 +82,52 @@
                 <h3 id="rev-in" class="text-3xl font-black">₦0.00</h3>
                 <hr class="my-4 border-slate-700">
                 <p class="text-[10px] font-bold uppercase text-slate-400">Total Payouts</p>
-                <h3 id="rev-out" class="text-3xl font-black text-red-400">₦0.00</h3>
+                <h3 id="rev-out" class="text-3xl font-black text-rose-400">₦0.00</h3>
             </div>
         </section>
     </div>
 
-   
-    <button onclick="setTier(1)" class="tier-btn active-tier">BRONZE</button>
-    <button onclick="setTier(2)" class="tier-btn">SILVER</button>
-    <button onclick="setTier(3)" class="tier-btn">GOLD</button>
-    <button onclick="setTier(4)" class="tier-btn">DIAMOND</button>
-    <button onclick="setTier(5)" class="tier-btn">VIP</button>
-</div>
-
-<input type="hidden" id="selected_tier" value="1">
-            <span class="text-[8px] font-bold uppercase">Product</span>
-        
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-4 flex justify-between items-center z-50">
+        <button onclick="switchView('publish', 'Publish Product')" class="nav-btn text-emerald-600 flex flex-col items-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="text-[8px] font-black uppercase mt-1">Add</span>
         </button>
-        <button onclick="switchView('deposits', 'Deposits')" class="nav-btn text-slate-400 flex flex-col items-center min-w-[70px]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 11l3-3m0 0l3 3m-3-3v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            <span class="text-[8px] font-bold uppercase">Deposits</span>
+        <button onclick="switchView('deposits', 'Deposits')" class="nav-btn text-slate-400 flex flex-col items-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 11l3-3m0 0l3 3m-3-3v8" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="text-[8px] font-black uppercase mt-1">Deposits</span>
         </button>
-        <button onclick="switchView('withdraws', 'Withdraws')" class="nav-btn text-slate-400 flex flex-col items-center min-w-[70px]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 13l-3 3m0 0l-3-3m3 3V8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            <span class="text-[8px] font-bold uppercase">Withdraws</span>
+        <button onclick="switchView('withdraws', 'Withdraws')" class="nav-btn text-slate-400 flex flex-col items-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 13l-3 3m0 0l-3-3m3 3V8" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="text-[8px] font-black uppercase mt-1">Withdraws</span>
         </button>
-        <button onclick="switchView('users', 'User Stats')" class="nav-btn text-slate-400 flex flex-col items-center min-w-[70px]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            <span class="text-[8px] font-bold uppercase">Users</span>
+        <button onclick="switchView('users', 'User Stats')" class="nav-btn text-slate-400 flex flex-col items-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="text-[8px] font-black uppercase mt-1">Users</span>
         </button>
-        <button onclick="switchView('revenue', 'Financials')" class="nav-btn text-slate-400 flex flex-col items-center min-w-[70px]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            <span class="text-[8px] font-bold uppercase">Revenue</span>
+        <button onclick="switchView('revenue', 'Financials')" class="nav-btn text-slate-400 flex flex-col items-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="text-[8px] font-black uppercase mt-1">Revenue</span>
         </button>
     </nav>
 
     <script>
-const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+        const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieHRwdnVpZWlva2phd2x0cWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDEwMzEsImV4cCI6MjA5Mzk3NzAzMX0.G-BtkLvLgswoxhQlRS7k68ykHb9EUWBrXSg1PVq3pgY');
+
+        let currentTier = 1;
+
+        function setTier(t) {
+            currentTier = t;
+            document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('active-tier'));
+            document.getElementById(`tbtn-${t}`).classList.add('active-tier');
+        }
 
         function switchView(viewId, title) {
             document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
             document.getElementById('view-title').innerText = title;
             
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.replace('text-emerald-600', 'text-slate-400');
-            });
-            // Fixed event targeting
-            if (event) {
-                event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
-            }
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-emerald-600', 'text-slate-400'));
+            event.currentTarget.classList.replace('text-slate-400', 'text-emerald-600');
 
             if(viewId === 'deposits') loadDeposits();
             if(viewId === 'withdraws') loadWithdraws();
@@ -126,79 +140,66 @@ const _supabase = supabase.createClient('https://sbxtpvuieiokjawltqjq.supabase.c
             const price = document.getElementById('p_price').value;
             const daily = document.getElementById('p_daily').value;
             const validity = document.getElementById('p_duration').value; 
+
             if(!name || !price || !daily || !validity) return alert("Fill all fields!");
 
             const { error } = await _supabase.from('products').insert([{ 
-                name, price: Number(price), daily_return: Number(daily), validity_days: Number(validity), status: 'active' 
+                name, 
+                price: Number(price), 
+                daily_return: Number(daily), 
+                validity_days: Number(validity), 
+                tier: currentTier,
+                status: 'active' 
             }]);
+
             if (error) alert(error.message);
-            else { alert("Product Live!"); location.reload(); }
+            else { 
+                alert(`Product Published to Tier ${currentTier}!`); 
+                location.reload(); 
+            }
         }
 
-       // --- DEPOSIT HANDLING ---
-async function loadDeposits() {
-    // We select everything (*) so we get the new name columns
-    const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-    if (error) return console.error(error);
-    
-    const list = document.getElementById('deposit-list');
-    list.innerHTML = data.map(d => `
-        <div id="dep-${d.id}" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50">
-            <!-- Display the User's Green Energy Profile Name -->
-            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">
-                ${d.user_name || 'No Account Name'}
-            </p>
+        async function loadDeposits() {
+            const { data, error } = await _supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+            if (error) return console.error(error);
             
-            <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
-            
-            <div class="space-y-1 mt-2 mb-4">
-                <!-- Display the Name they entered from their Bank App -->
-                <p class="text-[10px] text-slate-500 font-bold">
-                    <span class="text-slate-400">SENDER:</span> ${d.sender_name || 'Not Provided'}
-                </p>
-                <!-- Display the Phone Number -->
-                <p class="text-[10px] text-slate-500 font-bold">
-                    // REPLACE THIS LINE in your loadDeposits map function:
-<span class="text-slate-400">PHONE:</span> ${d.phone || d.phone_number || 'N/A'}
-                </p>
-            </div>
+            const list = document.getElementById('deposit-list');
+            list.innerHTML = data.map(d => `
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
+                    <p class="text-[10px] font-black text-emerald-600 uppercase mb-1">Incoming Deposit</p>
+                    <h4 class="font-black text-slate-800 text-lg">₦${Number(d.amount).toLocaleString()}</h4>
+                    <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase"><span class="text-slate-400">Sender:</span> ${d.sender_name || 'N/A'}</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase"><span class="text-slate-400">Phone:</span> ${d.phone || 'N/A'}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
+                        <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center py-10 text-slate-400 text-[10px] font-bold">NO PENDING DEPOSITS</p>';
+        }
 
-            <div class="flex gap-2">
-                <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
-                <button onclick="handleDeposit('${d.id}', '${d.user_id}', ${d.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
-            </div>
-        </div>
-    `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending deposits</p>';
-}
         async function loadWithdraws() {
-    const { data, error } = await _supabase
-        .from('withdrawals')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-    if (error) return console.error(error);
-    
-    const list = document.getElementById('withdraw-list');
-    list.innerHTML = data.map(w => `
-        <div id="wit-${w.id}" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
-            <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Withdrawal Request</p>
-            <h4 class="font-black text-slate-800 text-lg">₦${Number(w.amount).toLocaleString()}</h4>
+            const { data, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+            if (error) return console.error(error);
             
-            <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1 border border-slate-100">
-                <p class="text-[10px] text-slate-600 font-bold uppercase"><span class="text-slate-400">Bank:</span> ${w.bank_name || 'N/A'}</p>
-                <p class="text-[10px] text-slate-600 font-bold uppercase"><span class="text-slate-400">Acc No:</span> ${w.account_number || 'N/A'}</p>
-                <p class="text-[10px] text-slate-600 font-bold uppercase"><span class="text-slate-400">Holder:</span> ${w.account_holder || 'N/A'}</p>
-                <p class="text-[10px] text-emerald-600 font-bold uppercase"><span class="text-slate-400">Phone:</span> ${w.phone || 'N/A'}</p>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
-                <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
-            </div>
-        </div>
-    `).join('') || '<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No pending withdrawals</p>';
-}
+            const list = document.getElementById('withdraw-list');
+            list.innerHTML = data.map(w => `
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 mb-3">
+                    <p class="text-[10px] font-black text-rose-500 uppercase mb-1">Withdrawal Request</p>
+                    <h4 class="font-black text-slate-800 text-lg">₦${Number(w.amount).toLocaleString()}</h4>
+                    <div class="bg-slate-50 p-4 rounded-2xl my-3 space-y-1">
+                        <p class="text-[10px] text-slate-600 font-bold uppercase">Bank: ${w.bank_name}</p>
+                        <p class="text-[10px] text-slate-600 font-bold uppercase">Acc: ${w.account_number}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'success')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px]">APPROVE</button>
+                        <button onclick="handleWithdraw('${w.id}', '${w.user_id}', ${w.amount}, 'rejected')" class="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl font-black text-[10px]">REJECT</button>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center py-10 text-slate-400 text-[10px] font-bold">NO PENDING WITHDRAWALS</p>';
+        }
 
         async function loadUserStats() {
             const { data: users } = await _supabase.from('profiles').select('id');
@@ -214,7 +215,7 @@ async function loadDeposits() {
             document.getElementById('rev-out').innerText = '₦' + totalOut.toLocaleString();
         }
 
-        window.onload = () => { loadRevenue(); };
+        window.onload = () => { loadRevenue(); loadUserStats(); };
     </script>
 </body>
 </html>
