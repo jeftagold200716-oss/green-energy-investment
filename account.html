@@ -12,13 +12,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tier-card { transition: all 0.3s ease; }
         .tier-card:hover { transform: translateY(-5px); }
-        .investment-card {
-            background: white;
-            padding: 1.25rem;
-            border-radius: 2rem;
-            border: 1px solid #f1f5f9;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
     </style>
 </head>
 <body class="bg-slate-50 pb-32">
@@ -129,6 +122,7 @@
         ];
 
         let currentUser = null;
+        let allInvestments = []; // Store to allow instant toggling
 
         async function initAccount() {
             const phone = localStorage.getItem('userPhone');
@@ -151,46 +145,31 @@
 
             try {
                 if (type === 'products') {
-                    // Corrected table name to 'investments'
                     const { data } = await _supabase.from('investments').select('*, products(name)').eq('user_id', currentUser.id);
-                    const active = data?.filter(i => i.status === 'active') || [];
-                    const expired = data?.filter(i => i.status === 'expired') || [];
-                    
-                    container.innerHTML = `
-                        <div class="flex gap-2 mb-4">
-                            <div class="flex-1 bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
-                                <p class="text-[9px] font-black text-emerald-600 uppercase">Active</p>
-                                <p class="text-xl font-black text-emerald-700">${active.length}</p>
-                            </div>
-                            <div class="flex-1 bg-slate-100 p-4 rounded-2xl text-center">
-                                <p class="text-[9px] font-black text-slate-400 uppercase">Expired</p>
-                                <p class="text-xl font-black text-slate-500">${expired.length}</p>
-                            </div>
-                        </div>
-                        ${active.length > 0 ? active.map(i => `
-                            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center mb-2">
-                                <div><p class="font-black text-slate-800 text-sm">${i.products?.name || 'Plan'}</p><p class="text-[10px] text-slate-400 font-bold uppercase">Daily: ₦${Number(i.daily_return).toLocaleString()}</p></div>
-                                <span class="text-[9px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full uppercase">Running</span>
-                            </div>
-                        `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Active Products</p>'}
-                    `;
-                } else if (type === 'deposits') {
+                    allInvestments = data || [];
+                    renderProductList('active'); // Default to active
+                } 
+                else if (type === 'deposits') {
                     const { data } = await _supabase.from('deposits').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-                    container.innerHTML = (data && data.length > 0) ? data.map(d => `
+                    container.innerHTML = `<h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 px-2">Deposit History</h2>` + 
+                    ((data && data.length > 0) ? data.map(d => `
                         <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center mb-2">
                             <div><p class="font-black text-slate-800 text-sm">₦${Number(d.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(d.created_at).toLocaleDateString()}</p></div>
                             <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${d.status === 'approved' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-700'}">${d.status}</span>
                         </div>
-                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Deposit History</p>';
-                } else if (type === 'withdrawals') {
+                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Deposit History</p>');
+                } 
+                else if (type === 'withdrawals') {
                     const { data } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-                    container.innerHTML = (data && data.length > 0) ? data.map(w => `
+                    container.innerHTML = `<h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 px-2">Withdrawal History</h2>` +
+                    ((data && data.length > 0) ? data.map(w => `
                         <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center mb-2">
                             <div><p class="font-black text-slate-800 text-sm">₦${Number(w.amount).toLocaleString()}</p><p class="text-[9px] text-slate-400 font-bold">${new Date(w.created_at).toLocaleDateString()}</p></div>
                             <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${w.status === 'success' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-700'}">${w.status}</span>
                         </div>
-                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Withdrawal History</p>';
-                } else if (type === 'team') {
+                    `).join('') : '<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No Withdrawal History</p>');
+                } 
+                else if (type === 'team') {
                     const { data: team } = await _supabase.from('profiles').select('*').eq('referred_by', currentUser.id);
                     container.innerHTML = `
                         <div class="bg-slate-900 p-6 rounded-[2rem] text-white mb-4">
@@ -208,6 +187,61 @@
             } catch (e) {
                 container.innerHTML = '<p class="text-center text-red-400 text-[10px] font-black uppercase">SYNC ERROR</p>';
             }
+        }
+
+        function renderProductList(status) {
+            const container = document.getElementById('section_container');
+            const filtered = allInvestments.filter(i => i.status === status);
+            const activeCount = allInvestments.filter(i => i.status === 'active').length;
+            const expiredCount = allInvestments.filter(i => i.status === 'expired').length;
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <h2 class="text-[10px] font-black text-slate-800 uppercase tracking-tighter">Investment Assets</h2>
+                    <div class="flex bg-slate-200 p-1 rounded-xl">
+                        <button onclick="renderProductList('active')" class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${status === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}">Active (${activeCount})</button>
+                        <button onclick="renderProductList('expired')" class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${status === 'expired' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}">Expired (${expiredCount})</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    ${filtered.length > 0 ? filtered.map(i => `
+                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative overflow-hidden">
+                            ${status === 'active' ? '<div class="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 blur-2xl rounded-full"></div>' : ''}
+                            
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="font-black text-slate-800 text-sm uppercase">${i.products?.name || 'Investment Plan'}</h3>
+                                    <p class="text-[9px] font-bold text-slate-400 uppercase">Started: ${new Date(i.start_date).toLocaleDateString()}</p>
+                                </div>
+                                <span class="text-[8px] font-black ${status === 'active' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-500 bg-rose-50'} px-3 py-1 rounded-lg uppercase">
+                                    ${status}
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-slate-50 p-4 rounded-2xl">
+                                    <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Daily Return</p>
+                                    <p class="text-emerald-600 font-black text-sm">₦${Number(i.daily_return).toLocaleString()}</p>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-2xl">
+                                    <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Total Earned</p>
+                                    <p class="text-slate-800 font-black text-sm">₦${Number(i.total_earned || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex items-center justify-between px-1">
+                                <p class="text-[8px] font-bold text-slate-400 uppercase">Expires: ${new Date(i.expiry_date).toLocaleDateString()}</p>
+                                ${status === 'active' ? `
+                                <div class="flex items-center gap-1">
+                                    <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                                    <p class="text-[8px] font-black text-emerald-600 uppercase">Earning Active</p>
+                                </div>` : '<p class="text-[8px] font-black text-rose-400 uppercase">Completed</p>'}
+                            </div>
+                        </div>
+                    `).join('') : `<p class="text-center text-slate-400 text-[10px] font-bold uppercase py-10">No ${status} Products found</p>`}
+                </div>
+            `;
         }
 
         function openTierModal() {
