@@ -8,11 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* HIGH-VISIBILITY ANIMATED BACKGROUND */
+        /* NEON SKY BLUE & YELLOW ANIMATED BACKGROUND */
         body {
             margin: 0;
             overflow-x: hidden;
-            background: #064e3b; /* Deeper base for better contrast */
+            background: #001a2c; /* Deep dark blue for neon contrast */
             font-family: 'Inter', sans-serif;
         }
 
@@ -22,57 +22,65 @@
             width: 100%; height: 100%;
             z-index: -1;
             overflow: hidden;
-            background: radial-gradient(circle at center, #065f46 0%, #022c22 100%);
+            background: radial-gradient(circle at center, #003554 0%, #000814 100%);
         }
 
         .blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.6;
-            animation: move-obvious 15s infinite alternate ease-in-out;
+            filter: blur(50px);
+            opacity: 0.8;
+            /* Neon Glow Effect */
+            box-shadow: 0 0 100px currentColor;
+            animation: move-neon 12s infinite alternate ease-in-out;
         }
 
-        /* Vibrant Green & Emerald Blobs */
+        /* Neon Sky Blue Blob */
         .blob1 { 
-            width: 600px; height: 600px; 
-            top: -10%; left: -10%; 
-            background: #10b981; 
-        }
-        .blob2 { 
             width: 500px; height: 500px; 
+            top: -10%; left: -10%; 
+            background: #00d4ff; 
+            color: #00d4ff;
+        }
+        
+        /* Neon Yellow Blob */
+        .blob2 { 
+            width: 450px; height: 450px; 
             bottom: -5%; right: -5%; 
-            background: #34d399; 
-            animation-delay: -4s;
-            animation-duration: 18s;
+            background: #ffea00; 
+            color: #ffea00;
+            animation-delay: -3s;
+            animation-duration: 15s;
         }
+
+        /* Mix Blob (Sky Blue & Yellow blend) */
         .blob3 { 
-            width: 400px; height: 400px; 
-            top: 30%; left: 20%; 
-            background: #059669; 
-            animation-delay: -8s;
-            animation-duration: 20s;
+            width: 350px; height: 350px; 
+            top: 40%; left: 30%; 
+            background: #ccff00; 
+            color: #ccff00;
+            animation-delay: -6s;
+            animation-duration: 10s;
         }
 
-        /* Faster, larger movement for obvious effect */
-        @keyframes move-obvious {
+        @keyframes move-neon {
             0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            50% { transform: translate(150px, 200px) scale(1.2) rotate(90deg); }
-            100% { transform: translate(-50px, 400px) scale(0.8) rotate(180deg); }
+            50% { transform: translate(200px, 150px) scale(1.3) rotate(45deg); }
+            100% { transform: translate(-100px, 350px) scale(0.9) rotate(-45deg); }
         }
 
-        /* UI STYLES */
-        .solar-gradient { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
-        .welcome-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        /* DASHBOARD UI STYLES */
+        .solar-gradient { background: linear-gradient(135deg, #00d4ff 0%, #ffea00 100%); }
+        .welcome-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(12px); }
         .welcome-modal.active { display: flex; }
         .nav-item { color: #94a3b8; transition: all 0.2s; }
-        .nav-item.active-nav { color: #10b981; }
+        .nav-item.active-nav { color: #00d4ff; }
         
-        /* Glassmorphism for better visibility against moving bg */
+        /* Glassmorphism cards to see the neon background through them */
         .glass-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(0, 212, 255, 0.3);
         }
     </style>
 </head>
@@ -84,14 +92,14 @@
     </div>
 
     <div id="welcomePopup" class="welcome-modal active">
-        <div class="bg-white w-[90%] max-w-sm rounded-[2.5rem] p-8 relative animate-in fade-in zoom-in duration-300 shadow-2xl">
+        <div class="bg-white w-[90%] max-w-sm rounded-[2.5rem] p-8 relative animate-in fade-in zoom-in duration-300 shadow-[0_0_50px_rgba(0,212,255,0.4)]">
             <button onclick="closePopup()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full z-[2100]">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
             <div class="text-center">
-                <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div class="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <img src="https://i.postimg.cc/L5j2sy4y/photo-2026-05-10-17-58-34.jpg" class="w-12 h-12 rounded-xl" alt="Logo">
                 </div>
                 <h3 class="text-xl font-black text-slate-800">Welcome to Green Energy</h3>
@@ -112,13 +120,12 @@
     </div>
 
     <div class="max-w-lg mx-auto p-4 space-y-6 relative z-10">
-        
-        <div class="solar-gradient rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="solar-gradient rounded-[2.5rem] p-8 text-blue-900 shadow-xl shadow-sky-500/20 relative overflow-hidden">
             <div class="relative z-10">
-                <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest opacity-80">Available Balance</p>
+                <p class="text-blue-800 text-xs font-bold uppercase tracking-widest opacity-80">Available Balance</p>
                 <h2 id="balance" class="text-4xl font-black mt-2">₦0.00</h2>
                 <div class="flex gap-4 mt-8">
-                    <a href="deposit.html" class="bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl flex items-center gap-2 border border-white/30 active:scale-95 transition-all">
+                    <a href="deposit.html" class="bg-white/30 backdrop-blur-md px-6 py-3 rounded-2xl flex items-center gap-2 border border-white/40 active:scale-95 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         <span class="text-xs font-black uppercase">Deposit</span>
                     </a>
@@ -127,38 +134,42 @@
         </div>
 
         <div class="glass-card rounded-3xl p-5 flex items-center gap-4 shadow-sm">
-            <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <div class="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                 <img src="https://img.icons8.com/fluency/48/verified-badge.png" class="w-8 h-8"/>
             </div>
             <div>
-                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Infrastructure Partner</p>
+                <p class="text-[10px] font-bold text-sky-600 uppercase tracking-tight">Infrastructure Partner</p>
                 <h3 class="text-sm font-black text-slate-700">Green Energy Solar Co. Ltd</h3>
+                <p class="text-[10px] text-slate-400 font-medium">Certificate No: GE-NIG-2026-X4</p>
             </div>
         </div>
        
         <div class="mb-6 space-y-4">
-            <button id="claim-btn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
-                <span>CLAIM DAILY BONUS</span>
+            <button id="claim-btn" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-sky-200 flex items-center justify-center gap-2 transition-all active:scale-95">
+                <span id="claim-text">CLAIM DAILY BONUS</span>
             </button>
 
-            <div class="glass-card p-4 rounded-2xl shadow-sm">
+            <div class="glass-card p-4 rounded-2xl border border-slate-100 shadow-sm">
                 <p class="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Your Invitation Link</p>
-                <div class="flex items-center gap-2 bg-slate-50/50 p-2 rounded-xl border border-dashed border-slate-200">
-                    <input type="text" id="referral-url" readonly class="bg-transparent text-xs font-bold text-slate-600 flex-1 outline-none px-2" value="Generating link...">
-                    <button class="bg-emerald-600 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase">Copy</button>
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-200">
+                    <input type="text" id="referral-url" readonly class="bg-transparent text-xs font-bold text-slate-600 flex-1 outline-none px-2">
+                    <button class="bg-sky-600 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase">Copy</button>
                 </div>
             </div>
         </div>
 
         <div class="space-y-4">
-            <img src="https://i.postimg.cc/44V8WCY2/partnership-jpg.jpg" class="w-full rounded-[2.5rem] shadow-lg border-4 border-white" alt="Partnership">
+            <img src="https://i.postimg.cc/44V8WCY2/partnership-jpg.jpg" class="w-full rounded-[2.5rem] shadow-lg border-4 border-white" alt="Official Partnership">
         </div>
     </div>
 
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <h2 class="text-xl font-black text-slate-800 mb-6 leading-tight">Legitimacy Report</h2>
+    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+
+                <h2 class="text-xl font-black text-slate-800 mb-6 leading-tight">Legitimacy Report: Our USA Cooperation Strategy</h2>
+
                 <div class="text-[11px] text-slate-500 leading-relaxed space-y-4 font-medium">
-                    <p>At <strong>Green Energy Investment</strong>,Green Energy Investment</strong>,Green Energy Investment — Building a Sustainable Financial Future Through Renewable Energy
+
+                    <p>At <strong>Green Energy Investment</strong>,Green Energy Investment — Building a Sustainable Financial Future Through Renewable Energy
 
                         The global transition toward renewable energy has created new opportunities for innovation, sustainability, and economic participation. Green Energy Investment was founded with a vision to connect modern digital investment systems with the rapidly growing clean-energy sector, creating a platform focused on transparency, renewable development, and community-driven growth.
 
@@ -505,8 +516,7 @@ and participate responsibly.
 
 
 Renewable-energy and financial technology sectors continue to evolve, and transparency remains an important principle of our operational philosophy.
-            </div>
-
+   
             <div class="bg-slate-900 rounded-[2.5rem] p-8 text-center text-white">
                 <h4 class="font-black text-emerald-400 uppercase tracking-widest text-[10px]">Direct Support Handles</h4>
                 <div class="flex justify-center gap-6 mt-6">
